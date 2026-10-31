@@ -1,7 +1,8 @@
-import { ArrowUp, Camera, FileText, Mic, Square, Upload as UploadIcon, Volume2, VolumeX } from 'lucide-react'
+import { ArrowUp, Camera, FileText, Files, Mic, Square, Upload as UploadIcon, Volume2, VolumeX } from 'lucide-react'
 import { useState, type RefObject } from 'react'
 import AgentBrief from '../components/agent/AgentBrief'
 import OfferCard from '../components/agent/OfferCard'
+import ProcessSteps from '../components/agent/ProcessSteps'
 import ParticleOrb from '../components/agent/ParticleOrb'
 import ReviewLines from '../components/agent/ReviewLines'
 import { PairCard } from '../components/StartPanels'
@@ -19,7 +20,7 @@ const STATUS = {
   thinking: 'Thinking…',
   speaking: 'Speaking. I am not listening right now',
 } as const
-const PROMPTS = ['Catch me up', 'What is missing?', 'Elaborate', 'Find a replacement', 'Export the briefing']
+const PROMPTS = ['Show documents', 'Catch me up', 'What is missing?', 'Elaborate', 'Find a replacement', 'Export the briefing']
 
 interface Props {
   agent: ReturnType<typeof useAgent>
@@ -31,12 +32,16 @@ interface Props {
   refresh: (id: string) => Promise<void>
   onError: (message: string) => void
   isDock: boolean
+  onShowDocuments: () => void
 }
 
-export default function AgentPage({ agent, fileInput, cameraInput, session, result, brief, refresh, onError, isDock }: Props) {
+export default function AgentPage({ agent, fileInput, cameraInput, session, result, brief, refresh, onError, isDock, onShowDocuments }: Props) {
   const [text, setText] = useState('')
   const [dragging, setDragging] = useState(false)
-  const { mic, caption, phase, docs } = agent
+  const { mic, caption, docs } = agent
+  // While the server reads a delivery the agent has nothing to say yet, so show it working.
+  const processing = session?.events.at(-1)?.type === 'reading'
+  const phase = processing && agent.phase === 'idle' ? 'thinking' : agent.phase
 
   const send = (value: string) => {
     setText('')
@@ -59,12 +64,14 @@ export default function AgentPage({ agent, fileInput, cameraInput, session, resu
               {agent.muted ? <VolumeX size={18} aria-hidden /> : <Volume2 size={18} aria-hidden />}
             </button>
           )}
+          {result && <button className="btn btn--quiet btn--small" onClick={onShowDocuments}><Files size={15} aria-hidden /> View documents</button>}
         </div>
         <ParticleOrb className="agent__orb" phase={phase} level={mic.level} pulse={agent.pulse} />
         <p className="agent__caption" aria-live="polite">
           <span>{caption.text.slice(0, caption.at)}</span><span className="agent__caption-next">{caption.text.slice(caption.at)}</span>
         </p>
 
+        {session && <ProcessSteps events={session.events} />}
         {session && result && <Questions session={session} result={result} refresh={refresh} onError={onError} />}
         {result && <ReviewLines result={result} busy={agent.busy} onResolve={agent.resolve} />}
         {agent.offer && <OfferCard offer={agent.offer} />}
