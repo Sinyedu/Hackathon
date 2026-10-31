@@ -76,3 +76,23 @@ def test_import_rejects_unlisted_and_unclassified_files(client, monkeypatch, tmp
     for name in ["../backend/app/main.py", "missing_delivery_note.png"]:
         assert client.post(f"/api/session/{sid}/import", json={"filename": name, "kind": "delivery_note"}).status_code == 404
     assert client.post(f"/api/session/{sid}/import", json={"filename": "scan.png"}).status_code == 422
+
+
+def test_manual_resolve_settles_a_line_the_model_could_not(client, monkeypatch) -> None:
+    from helpers import model_down
+    model_down(monkeypatch)
+    sid = client.post("/api/session").json()["id"]
+    files = {"purchase_order": ("po.png", (FIXTURES / "purchase_order.png").read_bytes(), "image/png"),
+             "delivery_note": ("dn.png", (FIXTURES / "delivery_note.png").read_bytes(), "image/png")}
+    state = client.post(f"/api/session/{sid}/upload", files=files).json()
+    rec = client.get(f"/api/reconciliations/{state['reconciliation_id']}").json()
+    open_lines = [m for m in rec["matches"] if m["status"] != "matched"]
+    assert open_lines
+    line = next(l for l in rec["line_items"] if l["id"] == open_lines[0]["source_line_id"])
+    catalog = client.get("/api/catalog").json()
+    wanted = next(c for c in catalog if line["description"].lower().startswith(c["description"].lower()[:5]) or c["id"] == "P002")
+    resolved = client.post(f"/api/session/{sid}/resolve", json={"line_id": line["id"], "catalog_item_id": wanted["id"]})
+    assert resolved.status_code == 200
+    after = client.get(f"/api/reconciliations/{state['reconciliation_id']}").json()
+    assert next(m for m in after["matches"] if m["source_line_id"] == line["id"])["status"] == "matched"
+    assert client.post(f"/api/session/{sid}/resolve", json={"line_id": "nope", "catalog_item_id": None}).status_code == 404

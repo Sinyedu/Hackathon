@@ -22,7 +22,7 @@ from app.schemas.domain import DocumentKind, LineItem
 
 NUMBER = re.compile(r"^\d+(?:[.,]\d+)?$")
 PRICE = re.compile(r"^[€$£]?\s*\d+(?:[.,]\d{1,2})?\s*[€$£]?$")
-LINE = re.compile(r"^(?P<desc>.+)\s+(?P<qty>\d+(?:[.,]\d+)?)(?:\s+(?P<unit>[A-Za-z]+))?$")
+LINE = re.compile(r"^(?P<desc>.+)\s+(?P<qty>\d+(?:[.,]\d+)?)(?:\s+(?P<unit>[A-Za-z]+))?(?:\s+(?P<price>[€$£]\d+(?:[.,]\d{1,2})?))?$")
 MIN_OCR_SCORE = 0.5
 ROW_TOLERANCE = 0.6  # fraction of median text height
 
@@ -129,7 +129,8 @@ def parse_text_line(line: str) -> Row | None:
     quantity = to_decimal(m["qty"])
     if quantity is None:
         return None
-    return Row(line.strip(), m["desc"].strip(), quantity, (m["unit"] or "").lower(), None)
+    price = to_decimal(m["price"]) if m["price"] else None
+    return Row(line.strip(), m["desc"].strip(), quantity, (m["unit"] or "").lower(), price)
 
 
 def _items(rows: list[tuple[Row, int | None]], document_id: str) -> list[LineItem]:

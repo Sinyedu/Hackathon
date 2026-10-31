@@ -13,10 +13,13 @@ export function useWalkthrough(say: (text: string, onDone: () => void) => void) 
     clearSpotlight()
   }, [])
 
-  const run = useCallback(async (steps: Step[]) => {
+  const run = useCallback(async (steps: Step[], open?: (windowTitle: string) => void) => {
     const mine = ++token.current
     setActive(true)
     for (const step of steps) {
+      if (token.current !== mine) return
+      if (step.focus) open?.(step.focus)
+      await new Promise((r) => window.setTimeout(r, step.focus ? 450 : 0)) // let the window open before pointing at it
       if (token.current !== mine) return
       spotlight(step.selector, step.terms)
       await new Promise<void>((done) => say(step.text, done))

@@ -28,6 +28,7 @@ class SupplierProduct(BaseModel):
     available_qty: Decimal
     lead_time_days: int
     available: bool
+    url: str | None = None  # supplier's own product page when the catalog has one
 
 
 class Supplier(BaseModel):
@@ -78,6 +79,8 @@ class RecoveryOption(BaseModel):
     rank: int = 0
     rank_reasons: list[str] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)  # recommended | cheapest | fastest
+    buy_url: str = ""
+    buy_url_is_search: bool = True  # False when buy_url is the supplier's own product page
 
 
 class ExcludedCandidate(BaseModel):

@@ -61,7 +61,9 @@ export const updateCount = (id: string, line_id: string, counted: string | null)
   json<Session>(`/api/session/${id}/count`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ line_id, counted }) })
 export const resetSession = (id: string) => json<Session>(`/api/session/${id}/reset`, { method: 'POST' })
 export const getResult = (id: string) => json<Reconciliation>(`/api/reconciliations/${id}`)
-export const generateDelivery = (id: string, input: { persona: string; seed: number; chaos: string[]; ugliness: number }) =>
+export const resolveLine = (id: string, line_id: string, catalog_item_id: string | null) =>
+  json<Session>(`/api/session/${id}/resolve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ line_id, catalog_item_id }) })
+export const generateDelivery = (id: string, input: { persona: string; seed: number; chaos: string[]; ugliness: number; format: 'pdf' | 'png' }) =>
   json<{ delivery_id: string; supplier: string; purchase_order: string; delivery_note: string; seed: number }>(`/api/session/${id}/generate`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input),
   })

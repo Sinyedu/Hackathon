@@ -1,4 +1,4 @@
-"""Poll generated document pairs and hand them to the same pipeline as uploads."""
+"""Poll generated document pairs (PDF or PNG) and hand them to the same pipeline as uploads."""
 
 import asyncio
 from pathlib import Path
@@ -8,6 +8,7 @@ from app.services import pipeline, store
 
 ROOT = Path(__file__).resolve().parents[3]
 INBOX = ROOT / "dock-inbox"
+SUFFIXES = {".png", ".pdf"}
 
 
 async def watch() -> None:
@@ -16,9 +17,9 @@ async def watch() -> None:
     seen: set[str] = set()
     INBOX.mkdir(exist_ok=True)
     while True:
-        for note in sorted(INBOX.glob("*_dn.png")):
-            stem = note.name.removesuffix("_dn.png")
-            po = INBOX / f"{stem}_po.png"
+        for note in sorted(p for p in INBOX.glob("*_dn.*") if p.suffix in SUFFIXES):
+            stem = note.name.removesuffix(f"_dn{note.suffix}")
+            po = INBOX / f"{stem}_po{note.suffix}"
             if stem in seen or not po.exists():
                 continue
             seen.add(stem)

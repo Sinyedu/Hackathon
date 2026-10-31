@@ -84,3 +84,20 @@ def test_inbox_watcher_processes_generated_pair_and_reveal_reads_key(db, monkeyp
         assert reveal.status_code == 200
         assert reveal.json()["comparison"][0]["type"] == "shortage"
         assert reveal.json()["comparison"][0]["found"] is True
+
+
+def test_generated_pdf_pair_reads_without_ocr(tmp_path: Path) -> None:
+    generate = runpy.run_path(str(GENERATOR))["generate"]
+    generate.__globals__["INBOX"] = tmp_path / "inbox"
+    generate.__globals__["ANSWERS"] = tmp_path / "answers"
+    files = generate("testsession", "Nordic Greens", 3, ["shortage"], 0, "pdf")
+    assert files["purchase_order"].endswith(".pdf") and files["delivery_note"].endswith(".pdf")
+    key = json.loads((tmp_path / "answers" / f"{files['delivery_id']}.json").read_text())
+    po = extract_line_items((tmp_path / "inbox" / files["purchase_order"]).read_bytes(),
+                            document_id="po", kind=DocumentKind.PURCHASE_ORDER)
+    note = extract_line_items((tmp_path / "inbox" / files["delivery_note"]).read_bytes(),
+                              document_id="note", kind=DocumentKind.DELIVERY_NOTE)
+    assert [i.quantity for i in po] == [Decimal(q) for q in key["ordered_quantities"]]
+    assert [i.quantity for i in note] == [Decimal(q) for q in key["note_quantities"]]
+    assert [i.unit_price for i in po] == [Decimal(p) for p in ("12.50", "9.20", "9.80", "8.40", "1.90")]
+    assert all(i.unit_price is None for i in note)

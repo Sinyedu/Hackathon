@@ -1,38 +1,53 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { EVENT_LINES, intentOf, stripWake } from '../lib/agentIntent'
-import { guessKind, KIND_LABEL, type DocKind } from '../lib/fileKind'
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
+import { EVENT_LINES, intentOf, kindSaid, sectionFor, stripWake } from '../lib/agentIntent'
 import { briefToMarkdown, type Brief } from '../lib/brief'
-import { buildWalkthrough } from '../lib/walkthrough'
 import { errorMessage } from '../lib/errors'
 import { canSpeak, speak, stopSpeaking } from '../lib/speak'
 import { askQuestion, findRecovery, transcribeAudio } from '../services/api'
-import { approveSession, uploadSession, type Session } from '../services/session'
+import { approveSession, resolveLine, type LocalFile, type Session } from '../services/session'
 import type { Document, Reconciliation } from '../types/reconciliation'
 import type { OrbPhase } from '../components/agent/ParticleOrb'
 import { parseWake } from '../lib/wake'
+import { buildWalkthrough } from '../lib/walkthrough'
+import { useAgentFiles, type PickMode } from './useAgentFiles'
 import { useHandsFree, type ListenState } from './useHandsFree'
 import { useRecorder } from './useRecorder'
 import { useWalkthrough } from './useWalkthrough'
 
 export interface AgentLine { id: number; who: 'you' | 'agent'; text: string; sources?: Document[]; model?: boolean; error?: boolean }
 
-interface Args { open: boolean; wake: string | null; session: Session | null; result: Reconciliation | null; brief: Brief; refresh: (id: string) => Promise<void> }
+interface Args {
+  inputs: Record<PickMode, RefObject<HTMLInputElement | null>>
+  session: Session | null
+  result: Reconciliation | null
+  brief: Brief
+  refresh: (id: string) => Promise<void>
+  onGenerate: () => void
+  /** The agent page is on screen; the first greeting waits for it. */
+  active: boolean
+  /** "Hey agent" heard on any page: bring the agent forward. */
+  onWake: () => void
+  /** The header's Hey agent switch. */
+  listening: boolean
+}
 
-export function useAgent({ open, wake, session, result, brief, refresh }: Args) {
+/** A suggested replacement the user can follow; shown as a card with a real link. */
+export interface Offer { supplier: string; summary: string; url: string; isSearch: boolean }
+
+export function useAgent({ inputs, session, result, brief, refresh, onGenerate, active, onWake, listening }: Args) {
   const [log, setLog] = useState<AgentLine[]>([])
   const [caption, setCaption] = useState({ text: '', at: 0 })
   const [speaking, setSpeaking] = useState(false)
   const [busy, setBusy] = useState(false)
   const [muted, setMuted] = useState(!canSpeak)
   const [confirming, setConfirming] = useState(false)
-  const [choosing, setChoosing] = useState(false)
-  const [unsorted, setUnsorted] = useState<File[]>([])
-  const [armed, setArmed] = useState(false)
+  const [offer, setOffer] = useState<Offer | null>(null)
+  // Which briefing window the agent just talked about; the panel opens it.
+  const [focus, setFocus] = useState<{ title: string; at: number } | null>(null)
   const pulse = useRef(0)
   const nextId = useRef(1)
   const seen = useRef(0)
   const awaitingVerdict = useRef(false)
-  const greeted = useRef(false)
 
   const add = (line: Omit<AgentLine, 'id'>) => setLog((current) => [...current.slice(-30), { ...line, id: nextId.current++ }])
 
@@ -47,10 +62,9 @@ export function useAgent({ open, wake, session, result, brief, refresh }: Args) 
     })
   }, [muted])
 
-  // After an analysis the agent tours the result: the panel docks to the bottom so the page stays visible.
-  const [dock, setDock] = useState(false)
+  // After an analysis the agent tours the result on this page: it opens each briefing window, outlines it and marks the keywords.
   const walk = useWalkthrough(useCallback((text: string, done: () => void) => say(text, {}, done), [say]))
-  const tour = (rec: Reconciliation) => { setDock(true); void walk.run(buildWalkthrough(rec, window.location.pathname === '/dock')) }
+  const tour = (rec: Reconciliation) => void walk.run(buildWalkthrough(rec, brief), (title) => setFocus({ title, at: Date.now() }))
 
   const exportBrief = useCallback(() => {
     const blob = new Blob([briefToMarkdown(brief, result?.id ?? null)], { type: 'text/markdown' })
@@ -68,34 +82,30 @@ export function useAgent({ open, wake, session, result, brief, refresh }: Args) 
     const best = plan.options.find((o) => o.option_id === plan.recommended_option_id)
     if (!best) return say(`No supplier in the catalog can cover the ${shortage.description} shortage. I did not invent one.`)
     const lead = best.lead_time_days === 0 ? 'same day' : `in ${best.lead_time_days} day${best.lead_time_days === 1 ? '' : 's'}`
-    say(`${best.supplier_name} can cover it: ${best.packages_needed} times ${best.pack_size} ${best.pack_unit} for ${best.total_cost} ${best.currency}, ${lead}. It is a suggestion only; nothing is ordered. The other options are under the shortage on the page.`)
+    const summary = `${best.packages_needed} × ${best.pack_size} ${best.pack_unit} for ${best.total_cost} ${best.currency}, ${lead}`
+    setOffer({ supplier: best.supplier_name, summary, url: best.buy_url, isSearch: best.buy_url_is_search })
+    say(`${best.supplier_name} can cover it: ${best.packages_needed} times ${best.pack_size} ${best.pack_unit} for ${best.total_cost} ${best.currency}, ${lead}. Tap the link on screen to open it. It is a suggestion only; nothing is ordered.`)
   }
 
-  // Files come from the browser's own picker, so the user chooses where they are stored.
-  const sendFile = async (file: File, kind: DocKind) => {
-    if (!session) return
-    await uploadSession(session.id, { [kind]: file })
+  const docs = useAgentFiles({ session, inputs, say, note: (text) => add({ who: 'agent', text }) })
+  const importOne = (file: LocalFile) => void run(() => docs.importNamed(file.name))
+  const assignKind = (kind: 'purchase_order' | 'delivery_note') => void run(() => docs.assignPending(kind))
+  const uploadPicked = (picked: File[]) => void run(() => docs.uploadPicked(picked))
+  const resolve = (lineId: string, catalogItemId: string | null) => session && void run(async () => {
+    await resolveLine(session.id, lineId, catalogItemId)
     await refresh(session.id)
-    add({ who: 'agent', text: `Added ${file.name} as the ${KIND_LABEL[kind]}.` })
+  })
+  const openOffer = () => {
+    if (!offer) return say('I have no replacement to open yet. Ask me to find a replacement first.')
+    if (!window.open(offer.url, '_blank', 'noopener')) say('Your browser blocked the pop-up. Tap the link on screen to open it.')
   }
 
-  const chooseFiles = (picked: File[]) => run(async () => {
-    const unknown: File[] = []
-    for (const file of picked.slice(0, 2)) {
-      const kind = guessKind(file.name)
-      if (kind) await sendFile(file, kind)
-      else unknown.push(file)
-    }
-    setUnsorted(unknown)
-    setChoosing(unknown.length > 0)
-    if (unknown.length) say(`I cannot tell what ${unknown[0].name} is. Is it the purchase order or the delivery note?`)
-  })
-
-  const assign = (file: File, kind: DocKind) => run(async () => {
-    await sendFile(file, kind)
-    setUnsorted((rest) => rest.filter((f) => f !== file))
-    setChoosing(false)
-  })
+  const elaborate = (text: string) => {
+    const section = brief.sections.find((s) => s.title === sectionFor(text)) ?? brief.sections[0]
+    if (!section) return say('There is nothing to go into yet. Add the documents first.')
+    setFocus({ title: section.title, at: Date.now() })
+    say(`${section.title}. ${section.rows.map((r) => `${r.label}: ${r.value}${r.note ? `, ${r.note}` : ''}.`).join(' ')}`)
+  }
 
   const run = async (action: () => Promise<unknown>) => {
     setBusy(true)
@@ -106,15 +116,17 @@ export function useAgent({ open, wake, session, result, brief, refresh }: Args) 
     const text = stripWake(raw)
     if (!text || busy) return
     add({ who: 'you', text: raw.trim() })
-    setArmed(false)
     walk.stop()
+    const answeredKind = docs.pending && kindSaid(text)
+    if (answeredKind) return run(() => docs.assignPending(answeredKind))
     const intent = intentOf(text)
     if (intent === 'brief') return say(brief.spoken)
     if (intent === 'export') { exportBrief(); return say('I downloaded the briefing as a Markdown file.') }
-    if (intent === 'files' || intent === 'import') {
-      setChoosing(true)
-      return say('Tap the paperclip, then pick your purchase order and delivery note from wherever you keep them. I start reading as soon as they are in.')
-    }
+    if (intent === 'link') return openOffer()
+    if (intent === 'files') return run(() => docs.attach(text))
+    if (intent === 'generate') { onGenerate(); return say('Opening test deliveries. Print one and I will read it as soon as it lands.') }
+    if (intent === 'elaborate') return elaborate(text)
+    if (intent === 'import') return run(() => docs.importNamed(text))
     if (!result) return say('I have nothing to look at yet. Add the documents first.')
     if (intent === 'walkthrough') return tour(result)
     if (intent === 'findings') return say(brief.sections[0].rows.map((r) => `${r.label}: ${r.value}${r.note ? `, ${r.note}` : ''}.`).join(' '))
@@ -149,17 +161,14 @@ export function useAgent({ open, wake, session, result, brief, refresh }: Args) 
         setBusy(false)
         const rest = parseWake(heard)
         if (rest === null) return Date.now() < followUpUntil.current ? handle(heard) : undefined
+        onWake()
         if (rest) return handle(rest)
+        say('Yes boss?')
         followUpUntil.current = Date.now() + 10_000 // bare "Hey agent": the next utterance is the request
       })
       .catch((e: unknown) => { setBusy(false); say(`I could not hear that: ${errorMessage(e)}`, { error: true }) })
   }
-  const arm = () => {
-    followUpUntil.current = Date.now() + 15_000 // opened by voice: the next thing said is the request
-    setArmed(true)
-    window.setTimeout(() => setArmed(false), 15_000)
-  }
-  const hands = useHandsFree(open && mic.supported, busy || speaking || mic.recording, hearHandsFree)
+  const hands = useHandsFree(mic.supported && listening, busy || speaking || mic.recording, hearHandsFree)
 
   const confirmApproval = async () => {
     if (!session) return
@@ -175,43 +184,41 @@ export function useAgent({ open, wake, session, result, brief, refresh }: Args) 
     }
   }
 
-  // Greet with the current state on open; go quiet on close.
+  // Greet once the session is known; go quiet when the agent page is left.
+  const greeted = useRef(false)
   useEffect(() => {
-    if (!open) { stopSpeaking(); greeted.current = false; return }
-    if (greeted.current) return
+    if (!session || !active || greeted.current) return
     greeted.current = true
-    seen.current = session?.events.length ?? 0
-    if (wake !== null) return wake ? void handle(wake) : arm() // woken by voice: listen, do not read the briefing
+    seen.current = session.events.length
     say(brief.spoken)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
+  }, [session, active])
+  useEffect(() => stopSpeaking, [])
 
   // Narrate live session events while open.
   useEffect(() => {
-    if (!open || !session) return
+    if (!session || !greeted.current) return
     const fresh = session.events.slice(seen.current)
     seen.current = session.events.length
     const latest = fresh.at(-1)?.type
     if (!latest) return
     const waitingFor = fresh.at(-1)?.data.waiting_for
     if (latest === 'verdict') awaitingVerdict.current = true
-    else if (latest === 'delivery_received' && waitingFor) say(`Got it. Now I need the ${waitingFor.replace('_', ' ')}.`)
+    else if (latest === 'delivery_received' && waitingFor) say(`Alright boss, got it. Now I need the ${waitingFor.replace('_', ' ')}.`)
     else if (EVENT_LINES[latest]) say(EVENT_LINES[latest])
-  }, [open, session, say])
+  }, [session, say])
 
   useEffect(() => {
-    if (open && awaitingVerdict.current && result) {
+    if (awaitingVerdict.current && result) {
       awaitingVerdict.current = false
       tour(result)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, result])
+  }, [result])
 
-  useEffect(() => { if (!open) walk.stop() }, [open, walk.stop]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const phase: OrbPhase = mic.recording || hands.capturing || armed ? 'listening' : busy ? 'thinking' : speaking ? 'speaking' : 'idle'
+  const phase: OrbPhase = mic.recording || hands.capturing ? 'listening' : busy ? 'thinking' : speaking ? 'speaking' : 'idle'
   const toggleMute = () => { if (!muted) { stopSpeaking(); setSpeaking(false) } setMuted(!muted) }
-  return { log, caption, phase, pulse, mic: { ...mic, error: mic.error ?? micNote(hands.state) }, muted, toggleMute, busy, confirming, setConfirming, confirmApproval, handle, exportBrief, dock, setDock, touring: walk.active, skipTour: walk.stop, choosing, unsorted, chooseFiles, assign }
+  return { log, caption, phase, pulse, mic: { ...mic, error: mic.error ?? micNote(hands.state) }, listenState: hands.state, touring: walk.active, skipTour: walk.stop, muted, toggleMute, busy, confirming, setConfirming, confirmApproval, handle, exportBrief, docs, importOne, assignKind, uploadPicked, focus, offer, resolve }
 }
 
 function micNote(state: ListenState): string | null {

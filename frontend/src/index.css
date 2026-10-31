@@ -29,12 +29,14 @@ h1, h2, h3 { text-wrap: balance; }
 .wordmark__mark { position: relative; width: 22px; height: 22px; border-radius: 7px; background: var(--ink); }
 .wordmark__mark::after { content: ''; position: absolute; right: -3px; bottom: -3px; width: 10px; height: 10px; border-radius: 50%; background: var(--cobalt); box-shadow: 0 0 0 2.5px var(--paper); }
 .topbar__right { display: flex; align-items: center; gap: 20px; }
-.agent-btn { display: inline-flex; align-items: center; gap: 10px; height: 44px; padding: 0 18px 0 6px; border: 0; border-radius: 999px; background: var(--ink); color: var(--paper); font-weight: 600; font-size: 15px; transition: transform .2s var(--ease-out), box-shadow .2s var(--ease-out); }
-.agent-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px -8px rgba(35, 64, 255, .55); }
-.agent-btn:disabled { opacity: .5; }
-.agent-btn__orb { width: 34px; height: 34px; border-radius: 50%; background: #10131c; }
+.tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--desk); }
+.tabs svg { display: none; }
+.tabs a { padding: 7px 14px; border-radius: 999px; color: var(--ink-2); font-size: 14px; font-weight: 600; text-decoration: none; transition: color .15s, background .15s; }
+.tabs a:hover { color: var(--ink); }
+.tabs a[aria-current='page'] { background: var(--paper); color: var(--ink); box-shadow: 0 1px 3px rgba(11, 13, 18, .1); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .main { max-width: 1120px; margin: 0 auto; padding: clamp(40px, 7vw, 88px) clamp(16px, 4vw, 32px) 64px; }
-.banner { margin-bottom: 24px; padding: 12px 16px; border-radius: 12px; background: var(--tomato-tint); color: #9b2117; }
+.banner { margin: 16px clamp(16px, 4vw, 48px) 0; padding: 12px 16px; border-radius: 12px; background: var(--tomato-tint); color: #9b2117; }
 .live-status { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2); }
 .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
 .live-dot--active { background: var(--green); animation: live-pulse 2s ease-out infinite; }
@@ -186,11 +188,20 @@ h1, h2, h3 { text-wrap: balance; }
 .generator-preview img { max-width: 120px; max-height: 150px; object-fit: contain; }
 
 @media (max-width: 760px) {
-  .topbar { height: 60px; }
+  /* backdrop-filter would make the header the containing block of the fixed tab bar. */
+  .topbar { height: 56px; background: var(--paper); backdrop-filter: none; }
   .topbar .live-status { display: none; }
-  .agent-btn { height: 40px; font-size: 14px; padding-right: 14px; }
-  .agent-btn__orb { width: 30px; height: 30px; }
-  .start, .upload__picks, .source-columns, .question__pair, .persona-grid { grid-template-columns: 1fr; }
+  .tabs { position: fixed; inset: auto 0 0; z-index: 20; gap: 0; padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); border-top: 1px solid var(--rule); border-radius: 0; background: rgba(255, 255, 255, .94); backdrop-filter: saturate(1.4) blur(12px); }
+  .tabs a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 4px; border-radius: 12px; font-size: 12px; text-align: center; }
+  .tabs a[aria-current='page'] { background: none; box-shadow: none; color: var(--cobalt); }
+  .tabs svg { display: block; }
+  .main { padding-bottom: 104px; }
+  .persona-grid { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 10px; margin: 20px -20px 24px; padding: 0 20px 4px; scrollbar-width: none; }
+  .persona-card { flex: 0 0 72%; scroll-snap-align: start; }
+  .chaos-dock h2 { font-size: 24px; }
+  .generator-actions .primary-action { order: -1; flex: 1 1 100%; min-height: 52px; font-size: 16px; }
+  .generator-actions .secondary-action { flex: 1; }
+  .start, .upload__picks, .source-columns, .question__pair { grid-template-columns: 1fr; }
   .start { margin-top: 36px; }
   .upload, .pair, .chaos-dock { padding: 20px; }
   .pick { min-height: 0; flex-direction: row; align-items: center; gap: 14px; }

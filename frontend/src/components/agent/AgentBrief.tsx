@@ -1,21 +1,55 @@
-import { Check, Copy, Download } from 'lucide-react'
-import { useState } from 'react'
+import { Check, ChevronDown, Copy, Download } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { briefToMarkdown, type Brief } from '../../lib/brief'
 import ScanLinks from '../ScanLinks'
 import type { AgentLine } from '../../hooks/useAgent'
 
 const TONE_LABEL = { waiting: 'Waiting', problem: 'Discrepancy', review: 'Needs review', ok: 'All good', approved: 'Approved' } as const
+const slug = (title: string) => `window-${title.toLowerCase().replace(/\W+/g, '-')}`
 
-interface Props { brief: Brief; log: AgentLine[]; reconciliationId: string | null; onExport: () => void }
+interface Props {
+  brief: Brief
+  log: AgentLine[]
+  reconciliationId: string | null
+  onExport: () => void
+  /** A window the agent is talking about; it opens and scrolls into view. */
+  focus: { title: string; at: number } | null
+  /** Shown while there is nothing to brief yet. */
+  children?: ReactNode
+}
 
-export default function AgentBrief({ brief, log, reconciliationId, onExport }: Props) {
+export default function AgentBrief({ brief, log, reconciliationId, onExport, focus, children }: Props) {
   const [view, setView] = useState<'brief' | 'talk'>('brief')
+  const [open, setOpen] = useState<Set<string>>(() => new Set(['Findings']))
   const [copied, setCopied] = useState(false)
+
+  // Derived during render: when the agent focuses a window, show the briefing tab with it open.
+  const [seenFocus, setSeenFocus] = useState(focus)
+  if (focus !== seenFocus) {
+    setSeenFocus(focus)
+    if (focus) {
+      setView('brief')
+      setOpen((current) => new Set(current).add(focus.title))
+    }
+  }
+  useEffect(() => {
+    if (!focus) return
+    const frame = requestAnimationFrame(() => document.getElementById(slug(focus.title))?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }))
+    return () => cancelAnimationFrame(frame)
+  }, [focus])
+
   const copy = async () => {
     await navigator.clipboard.writeText(briefToMarkdown(brief, reconciliationId))
     setCopied(true)
     window.setTimeout(() => setCopied(false), 1600)
   }
+  const toggle = (title: string, isOpen: boolean) => setOpen((current) => {
+    if (current.has(title) === isOpen) return current
+    const next = new Set(current)
+    if (isOpen) next.add(title)
+    else next.delete(title)
+    return next
+  })
 
   return (
     <section className="agent-brief" aria-label="Briefing">
@@ -28,10 +62,11 @@ export default function AgentBrief({ brief, log, reconciliationId, onExport }: P
         <div className="agent-brief__body">
           <span className={`tone-chip tone-chip--${brief.tone}`}>{TONE_LABEL[brief.tone]}</span>
           <h2>{brief.headline}</h2>
-          {brief.sections.length === 0 && <p className="agent-brief__empty">The briefing fills in by itself once both documents are read.</p>}
+          {brief.sections.length === 0 && <><p className="agent-brief__empty">Analysis appears here as windows once both documents are read. Say “elaborate” and I will open one.</p>{children}</>}
           {brief.sections.map((section) => (
-            <div className="brief-section" key={section.title}>
-              <h3>{section.title}</h3>
+            <details className="window" id={slug(section.title)} key={section.title} open={open.has(section.title)}
+              onToggle={(event) => toggle(section.title, event.currentTarget.open)}>
+              <summary><span>{section.title}</span><small>{section.rows.length}</small><ChevronDown size={16} aria-hidden /></summary>
               <dl>
                 {section.rows.map((row, index) => (
                   <div className={row.alert ? 'brief-row brief-row--alert' : 'brief-row'} key={`${row.label}-${index}`}>
@@ -40,12 +75,12 @@ export default function AgentBrief({ brief, log, reconciliationId, onExport }: P
                   </div>
                 ))}
               </dl>
-            </div>
+            </details>
           ))}
-          <div className="agent-brief__export">
-            <button className="btn btn--quiet" onClick={onExport} disabled={!brief.sections.length}><Download size={16} aria-hidden /> Download .md</button>
-            <button className="btn btn--quiet" onClick={() => void copy()} disabled={!brief.sections.length}>{copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />} {copied ? 'Copied' : 'Copy'}</button>
-          </div>
+          {brief.sections.length > 0 && <div className="agent-brief__export">
+            <button className="btn btn--quiet" onClick={onExport}><Download size={16} aria-hidden /> Download .md</button>
+            <button className="btn btn--quiet" onClick={() => void copy()}>{copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />} {copied ? 'Copied' : 'Copy'}</button>
+          </div>}
         </div>
       ) : (
         <ol className="agent-log" aria-live="polite">
