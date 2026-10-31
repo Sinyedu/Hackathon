@@ -1,5 +1,6 @@
 import type { AppEntry, CommandsConfig, SitesConfig } from '@kiwi/shared';
-import { runModelPath, say, type RunOutcome } from './model-path';
+import { runModelPath, type RunOutcome } from './model-path';
+import { say } from './say';
 import type { LlmClient } from './ports';
 import { createRouter } from './router';
 import { runTool, type ToolRunDeps } from './run-tool';

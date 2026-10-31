@@ -8,6 +8,9 @@ function Message({ message }: { message: ChatMessage }) {
       <li className="msg msg--receipt">
         <StatusChip status={message.status} />
         <span>{message.text}</span>
+        {message.image && (
+          <img className="proof" src={message.image} alt="Screenshot Kiwi looked at" />
+        )}
       </li>
     );
   }

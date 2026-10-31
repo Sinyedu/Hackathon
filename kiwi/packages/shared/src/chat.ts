@@ -16,6 +16,7 @@ export const chatMessageSchema = z.discriminatedUnion('role', [
     role: z.literal('receipt'),
     text: z.string(),
     status: receiptStatusSchema,
+    image: z.string().optional(),
   }),
 ]);
 export type ChatMessage = z.infer<typeof chatMessageSchema>;

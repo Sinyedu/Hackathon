@@ -3,9 +3,11 @@ import {
   agentEventSchema,
   ipcChannels,
   pingResponseSchema,
+  pullProgressSchema,
+  setupStatusSchema,
   voiceCommandSchema,
   voiceEventSchema,
-  voiceSettingsSchema,
+  editableSettingsSchema,
   type KiwiApi,
 } from '@kiwi/shared';
 import type { ZodType } from 'zod';
@@ -54,8 +56,14 @@ const api: KiwiApi = {
     pushEnd: () => ipcRenderer.send(ipcChannels.voicePushEnd),
   },
   settings: {
-    get: async () => voiceSettingsSchema.parse(await ipcRenderer.invoke(ipcChannels.settingsGet)),
+    get: async () =>
+      editableSettingsSchema.parse(await ipcRenderer.invoke(ipcChannels.settingsGet)),
     update: (change) => ipcRenderer.send(ipcChannels.settingsUpdate, change),
+  },
+  setup: {
+    status: async () => setupStatusSchema.parse(await ipcRenderer.invoke(ipcChannels.setupStatus)),
+    pull: (model) => ipcRenderer.send(ipcChannels.setupPull, { model }),
+    onProgress: (handler) => subscribe(ipcChannels.setupProgress, pullProgressSchema, handler),
   },
   stopAll: () => ipcRenderer.send(ipcChannels.stopAll),
 };

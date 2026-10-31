@@ -1,8 +1,9 @@
 import { z } from 'zod';
-import { voiceSettingsSchema } from './settings';
+import { editableSettingsSchema } from './settings';
 import type { AgentEvent } from './agent-events';
 import type { VoiceCommand, VoiceEvent } from './voice';
-import type { VoiceSettings } from './settings';
+import type { EditableSettings } from './settings';
+import type { PullProgress, SetupStatus } from './setup';
 
 /** Every IPC channel name lives here and nowhere else. */
 export const ipcChannels = {
@@ -26,6 +27,9 @@ export const ipcChannels = {
   stopAll: 'kiwi:stop-all',
   settingsGet: 'kiwi:settings:get',
   settingsUpdate: 'kiwi:settings:update',
+  setupStatus: 'kiwi:setup:status',
+  setupPull: 'kiwi:setup:pull',
+  setupProgress: 'kiwi:setup:progress',
 } as const;
 
 export const pingRequestSchema = z.object({ message: z.string().max(200) });
@@ -36,7 +40,7 @@ export const dragMoveSchema = z.object({ dx: z.number(), dy: z.number() });
 export const chatSendSchema = z.object({ text: z.string().trim().min(1).max(2000) });
 export const chatConfirmSchema = z.object({ id: z.string(), accepted: z.boolean() });
 
-export const voiceSettingsPatchSchema = voiceSettingsSchema.partial();
+export const settingsPatchSchema = editableSettingsSchema.partial();
 
 export type PingRequest = z.infer<typeof pingRequestSchema>;
 export type PingResponse = z.infer<typeof pingResponseSchema>;
@@ -71,8 +75,13 @@ export interface KiwiApi {
     pushEnd(): void;
   };
   settings: {
-    get(): Promise<VoiceSettings>;
-    update(change: Partial<VoiceSettings>): void;
+    get(): Promise<EditableSettings>;
+    update(change: Partial<EditableSettings>): void;
+  };
+  setup: {
+    status(): Promise<SetupStatus>;
+    pull(model: string): void;
+    onProgress(handler: (progress: PullProgress) => void): () => void;
   };
   /** Cancel audio, the agent run and any pending confirmation at once. */
   stopAll(): void;

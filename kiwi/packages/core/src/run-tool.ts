@@ -1,7 +1,8 @@
 import type { AgentEvent } from '@kiwi/shared';
 import type { ActionJournal, ConfirmationPort, InverseAction } from './ports';
 import { wrapUntrusted } from './safety';
-import type { ToolContext } from './tools/types';
+import { say } from './say';
+import type { ToolContext, ToolOutcome } from './tools/types';
 import type { ToolRegistry } from './tools/registry';
 
 export interface ToolRunDeps {
@@ -37,7 +38,7 @@ export async function runTool(
 
   const receiptId = deps.newId();
   const planLine = tool.describe(parsed.data);
-  if (tool.risk !== 'read' && !options.skipConfirmation) {
+  if (tool.risk !== 'read' && !tool.selfConfirming && !options.skipConfirmation) {
     deps.emit({ type: 'receipt', id: receiptId, status: 'PLANNED', text: planLine });
     deps.emit({ type: 'confirmationRequested', id: receiptId, lines: [planLine] });
     const accepted = await deps.confirm.confirm({ id: receiptId, lines: [planLine] });
@@ -55,6 +56,32 @@ export async function runTool(
   return execute(tool.name, parsed.data, receiptId, deps);
 }
 
+async function attempt(run: () => Promise<ToolOutcome>): Promise<ToolOutcome> {
+  try {
+    return await run();
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+function emitSuccess(
+  deps: ToolRunDeps,
+  receiptId: string,
+  outcome: Extract<ToolOutcome, { ok: true }>,
+): void {
+  deps.emit({
+    type: 'receipt',
+    id: receiptId,
+    status: 'DONE',
+    text: outcome.summary,
+    image: outcome.image,
+  });
+  for (const line of outcome.receipts ?? []) {
+    deps.emit({ type: 'receipt', id: deps.newId(), status: 'DONE', text: line });
+  }
+  if (outcome.say) say(deps, outcome.say);
+}
+
 async function execute(
   name: string,
   args: unknown,
@@ -64,21 +91,13 @@ async function execute(
   const tool = deps.registry.get(name);
   if (!tool) return { status: 'failed', message: `Unknown tool “${name}”.` };
   deps.emit({ type: 'toolStarted', name });
-  let outcome;
-  try {
-    outcome = await tool.execute(args, deps.context);
-  } catch (error) {
-    outcome = {
-      ok: false as const,
-      message: error instanceof Error ? error.message : String(error),
-    };
-  }
+  const outcome = await attempt(() => tool.execute(args, deps.context));
   deps.emit({ type: 'toolFinished', name, ok: outcome.ok });
   if (!outcome.ok) {
     deps.emit({ type: 'receipt', id: receiptId, status: 'FAILED', text: outcome.message });
     return { status: 'failed', message: outcome.message };
   }
-  deps.emit({ type: 'receipt', id: receiptId, status: 'DONE', text: outcome.summary });
+  emitSuccess(deps, receiptId, outcome);
   const inverse: InverseAction | undefined = outcome.inverse;
   deps.journal.record({
     id: receiptId,

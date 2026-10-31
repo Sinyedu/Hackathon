@@ -1,18 +1,19 @@
-import { BrowserWindow, session, systemPreferences } from 'electron';
+import { app, BrowserWindow, session, systemPreferences } from 'electron';
 import {
+  editableSettingsSchema,
   ipcChannels,
+  type EditableSettings,
   type Settings,
   type VoiceCommand,
   type VoiceEvent,
-  type VoiceSettings,
 } from '@kiwi/shared';
 import { saveSettings } from './settings-store';
 
 export interface VoiceHost {
   command(command: VoiceCommand): void;
   relay(event: VoiceEvent): void;
-  voiceSettings(): VoiceSettings;
-  updateSettings(change: Partial<VoiceSettings>): void;
+  editableSettings(): EditableSettings;
+  updateSettings(change: Partial<EditableSettings>): void;
   isVoiceWindow(webContentsId: number): boolean;
   /** Pushes the stored settings to the voice window once its page has loaded. */
   configureWhenReady(): void;
@@ -41,24 +42,43 @@ function allowOnlyVoiceMicrophone(voice: BrowserWindow): void {
   );
 }
 
-export function createVoiceHost(voice: BrowserWindow, settings: Settings): VoiceHost {
+/** Things that must happen right away when particular settings change. */
+function applySideEffects(
+  change: Partial<EditableSettings>,
+  shortcutsChanged: () => void,
+  configure: () => void,
+): void {
+  if (change.wakeWord && process.platform === 'darwin')
+    void systemPreferences.askForMediaAccess('microphone');
+  if (change.launchAtLogin !== undefined)
+    app.setLoginItemSettings({ openAtLogin: change.launchAtLogin });
+  if ('panelShortcut' in change || 'talkShortcut' in change) shortcutsChanged();
+  if ('wakeWord' in change || 'speakReplies' in change || 'inputDeviceId' in change) configure();
+}
+
+export function createVoiceHost(
+  voice: BrowserWindow,
+  settings: Settings,
+  onSettingsChanged: () => void,
+): VoiceHost {
   allowOnlyVoiceMicrophone(voice);
 
   const command = (next: VoiceCommand): void => {
     if (!voice.isDestroyed()) voice.webContents.send(ipcChannels.voiceCommand, next);
   };
-  const voiceSettings = (): VoiceSettings => ({
-    wakeWord: settings.wakeWord,
-    speakReplies: settings.speakReplies,
-    inputDeviceId: settings.inputDeviceId,
-  });
+  const editableSettings = (): EditableSettings => editableSettingsSchema.parse(settings);
   const configure = (): void => {
-    command({ type: 'configure', ...voiceSettings() });
+    command({
+      type: 'configure',
+      wakeWord: settings.wakeWord,
+      speakReplies: settings.speakReplies,
+      inputDeviceId: settings.inputDeviceId,
+    });
   };
 
   return {
     command,
-    voiceSettings,
+    editableSettings,
     relay(event) {
       for (const window of BrowserWindow.getAllWindows()) {
         if (!window.isDestroyed()) window.webContents.send(ipcChannels.voiceEvent, event);
@@ -67,10 +87,7 @@ export function createVoiceHost(voice: BrowserWindow, settings: Settings): Voice
     updateSettings(change) {
       Object.assign(settings, change);
       saveSettings(settings);
-      if (change.wakeWord && process.platform === 'darwin') {
-        void systemPreferences.askForMediaAccess('microphone');
-      }
-      configure();
+      applySideEffects(change, onSettingsChanged, configure);
     },
     isVoiceWindow: (id) => id === voice.webContents.id,
     configureWhenReady: () => voice.webContents.once('did-finish-load', configure),

@@ -3,7 +3,7 @@ import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 import { isInsideSandbox } from '@kiwi/core';
 
-export const sandboxRoot = (): string => join(homedir(), 'KiwiSandbox');
+export const defaultSandboxRoot = (): string => join(homedir(), 'KiwiSandbox');
 
 /** Resolves symlinks and confirms the real path still lies inside the sandbox. */
 async function assertRealPathInside(root: string, target: string): Promise<void> {

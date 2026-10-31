@@ -6,7 +6,8 @@ import { ConfirmBar } from './ConfirmBar';
 import { MessageList } from './MessageList';
 import { PanelHeader } from './PanelHeader';
 import { QuickActions } from './QuickActions';
-import { MicButton, VoiceSettingsForm } from './VoiceControls';
+import { SettingsForm } from './SettingsForm';
+import { MicButton } from './VoiceControls';
 
 interface ChatPanelProps {
   state: MascotState;
@@ -52,8 +53,8 @@ export function ChatPanel(props: ChatPanelProps) {
             <MicButton active={micActive} />
           </div>
           <details>
-            <summary>Voice settings</summary>
-            <VoiceSettingsForm devices={props.voice.devices} />
+            <summary>Settings</summary>
+            <SettingsForm devices={props.voice.devices} />
           </details>
           {import.meta.env.DEV && (
             <p className="debug-latency">

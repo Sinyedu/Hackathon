@@ -1,5 +1,10 @@
 import { z } from 'zod';
 import type { LlmToolSpec } from '../ports';
+import { codeDiff, codeDiscard, codeKeep, delegateCode } from './delegate-code';
+import { calculate, convertUnitsTool, define, getWeather, translate } from './info-extra';
+import { research } from './research';
+import { screenshotDescribe } from './screenshot';
+import { sortFolder, undoMoves } from './sort-folder';
 import { clipboardRead, clipboardWrite } from './clipboard';
 import { getTime, listAppsAllowed } from './info';
 import { openApp } from './open-app';
@@ -44,4 +49,17 @@ export const defaultRegistry = (): ToolRegistry =>
     setVolume,
     listAppsAllowed,
     getTime,
+    research,
+    screenshotDescribe,
+    sortFolder,
+    undoMoves,
+    getWeather,
+    calculate,
+    convertUnitsTool,
+    translate,
+    define,
+    delegateCode,
+    codeKeep,
+    codeDiff,
+    codeDiscard,
   ]);

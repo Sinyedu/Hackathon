@@ -1,5 +1,6 @@
 import type { LlmMessage, LlmResult, LlmToolCall } from './ports';
 import { buildSystemPrompt } from './prompt';
+import { say } from './say';
 import { runTool, toolResultForModel } from './run-tool';
 import type { AgentDeps } from './agent';
 
@@ -16,12 +17,6 @@ function llmFailureText(failure: LlmFailure, model: string): string {
     return `The model ${model} is not installed. Run "ollama pull ${model}" and try again.`;
   }
   return failure.message;
-}
-
-export function say(deps: Pick<AgentDeps, 'emit' | 'newId'>, text: string): void {
-  const id = deps.newId();
-  deps.emit({ type: 'assistantDelta', id, text });
-  deps.emit({ type: 'assistantDone', id });
 }
 
 const isCancelled = (signal: AbortSignal): boolean => signal.aborted;

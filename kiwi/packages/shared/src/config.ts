@@ -39,6 +39,8 @@ export const commandSchema = z.object({
   patterns: z.array(z.string()).min(1),
   /** Fixed arguments merged into the tool call. */
   args: z.record(z.string(), z.unknown()).default({}),
+  /** Maps a slot name to the tool argument it fills, e.g. { "text": "topic" }. */
+  slotArgs: z.record(z.string(), z.string()).default({}),
 });
 
 export const commandsConfigSchema = z.object({

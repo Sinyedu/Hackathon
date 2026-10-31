@@ -45,3 +45,7 @@ user text -> Agent.run
 ## Voice (step 4)
 
 A hidden `voice` window owns the microphone, Whisper (worker) and speech synthesis. `VoiceSession` in core ties them together through ports (`AudioInputPort`, `SpeechToTextPort`, `TextToSpeechPort`); it contains the endpointing, VAD segmenter, wake-phrase parser and spoken-reply logic, all unit-tested with fakes. The window sends commands to the agent with `chat.send`, reports `VoiceEvent`s that main relays to the overlay (mic badge, listening ring, beak) and panel (settings, engine notes, latency debug line in dev), and receives `VoiceCommand`s from main (push-to-talk, hotkey, stop, configure). `stopAll` cancels the agent, pending confirmations and audio together.
+
+## Power skills (step 5)
+
+`ToolContext.services` carries the extra ports: `WebPort`, `ModelPort`, `ScreenPort`, `SandboxFilesPort`, `CodingBackendPort` and a confirmation hook for tools that confirm themselves (`sort_folder`, `delegate_code`). Tool outcomes can add a reply, extra receipt lines (sources, test results) and a proof image. Adapters live in `apps/desktop/src/main/adapters/` (`web.ts`, `model-port.ts`, `screen.ts`, `sandbox-files.ts`, `claude-code-backend.ts` + `claude-process.ts`). `setup-host.ts` serves the wizard (Ollama status, model pulls with progress). IPC trust is split: the voice window can report, send recognized text and stop; everything else is limited to the overlay and panel.

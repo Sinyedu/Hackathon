@@ -5,7 +5,7 @@ import {
   sitesConfigSchema,
 } from '@kiwi/shared';
 import { describe, expect, it } from 'vitest';
-import { createFakePlatform } from '../testing';
+import { createFakePlatform, createFakeServices } from '../testing';
 import { clipboardRead, clipboardWrite } from './clipboard';
 import { getTime, listAppsAllowed } from './info';
 import { openUrl } from './open-url';
@@ -17,6 +17,7 @@ const context = (): ToolContext & { platform: ReturnType<typeof createFakePlatfo
   platform: createFakePlatform(),
   apps: appsConfigSchema.parse(defaultAppsJson).apps,
   sites: sitesConfigSchema.parse(defaultSitesJson),
+  services: createFakeServices(),
 });
 
 describe('tools', () => {

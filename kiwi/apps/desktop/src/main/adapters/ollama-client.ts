@@ -27,7 +27,11 @@ type FetchLike = typeof fetch;
 function toOllamaMessage(message: LlmMessage): Record<string, unknown> {
   if (message.role === 'tool')
     return { role: 'tool', tool_name: message.toolName, content: message.content };
-  const base = { role: message.role, content: message.content };
+  const base = {
+    role: message.role,
+    content: message.content,
+    ...(message.images ? { images: message.images } : {}),
+  };
   if (!message.toolCalls) return base;
   return {
     ...base,

@@ -68,7 +68,9 @@
         "find {text} on youtube",
         "look up {text} on youtube"
       ],
-      "args": { "engine": "youtube" }
+      "args": {
+        "engine": "youtube"
+      }
     },
     {
       "id": "search-web",
@@ -82,7 +84,9 @@
         "find {text} online",
         "web search {text}"
       ],
-      "args": { "engine": "web" }
+      "args": {
+        "engine": "web"
+      }
     },
     {
       "id": "timer",
@@ -129,7 +133,9 @@
         "raise the volume",
         "increase volume"
       ],
-      "args": { "action": "up" }
+      "args": {
+        "action": "up"
+      }
     },
     {
       "id": "volume-down",
@@ -145,7 +151,9 @@
         "decrease volume",
         "lower volume"
       ],
-      "args": { "action": "down" }
+      "args": {
+        "action": "down"
+      }
     },
     {
       "id": "volume-mute",
@@ -159,7 +167,9 @@
         "unmute",
         "unmute the sound"
       ],
-      "args": { "action": "mute" }
+      "args": {
+        "action": "mute"
+      }
     },
     {
       "id": "time",
@@ -172,6 +182,146 @@
         "tell me the time",
         "current time",
         "time"
+      ]
+    },
+    {
+      "id": "sort-downloads",
+      "tool": "sort_folder",
+      "patterns": [
+        "clean up my downloads",
+        "clean up downloads",
+        "sort my downloads",
+        "sort downloads",
+        "organize my downloads",
+        "organise my downloads",
+        "tidy my downloads",
+        "tidy up my downloads"
+      ],
+      "args": {
+        "folder": "Downloads"
+      }
+    },
+    {
+      "id": "screen-error",
+      "tool": "screenshot_describe",
+      "patterns": [
+        "explain this error",
+        "explain the error",
+        "what does this error mean",
+        "what does the error mean",
+        "explain the error on my screen"
+      ],
+      "args": {
+        "explainError": true
+      }
+    },
+    {
+      "id": "screen",
+      "tool": "screenshot_describe",
+      "patterns": [
+        "what's on my screen",
+        "whats on my screen",
+        "what is on my screen",
+        "what is on the screen",
+        "describe my screen",
+        "describe the screen",
+        "look at my screen",
+        "what am i looking at"
+      ]
+    },
+    {
+      "id": "research",
+      "tool": "research",
+      "patterns": [
+        "research {text}",
+        "do research on {text}",
+        "look into {text}",
+        "find out about {text}"
+      ],
+      "slotArgs": {
+        "text": "topic"
+      }
+    },
+    {
+      "id": "weather",
+      "tool": "get_weather",
+      "patterns": [
+        "what's the weather in {text}",
+        "whats the weather in {text}",
+        "what is the weather in {text}",
+        "weather in {text}",
+        "weather for {text}",
+        "how's the weather in {text}"
+      ],
+      "slotArgs": {
+        "text": "city"
+      }
+    },
+    {
+      "id": "convert",
+      "tool": "convert_units",
+      "patterns": ["convert {amount} {unit} to {text}", "how many {text} in {amount} {unit}"],
+      "slotArgs": {
+        "amount": "value",
+        "unit": "from",
+        "text": "to"
+      }
+    },
+    {
+      "id": "calculate",
+      "tool": "calculate",
+      "patterns": ["calculate {text}", "calc {text}", "compute {text}"],
+      "slotArgs": {
+        "text": "expression"
+      }
+    },
+    {
+      "id": "translate",
+      "tool": "translate",
+      "patterns": [
+        "translate {text} to {language}",
+        "translate {text} into {language}",
+        "how do you say {text} in {language}"
+      ],
+      "slotArgs": {
+        "text": "text",
+        "language": "language"
+      }
+    },
+    {
+      "id": "define",
+      "tool": "define",
+      "patterns": ["define {text}", "what does {text} mean", "what is the definition of {text}"],
+      "slotArgs": {
+        "text": "word"
+      }
+    },
+    {
+      "id": "delegate",
+      "tool": "delegate_code",
+      "patterns": ["delegate {text}", "have a coding agent {text}", "code task {text}"],
+      "slotArgs": {
+        "text": "task"
+      }
+    },
+    {
+      "id": "code-keep",
+      "tool": "code_keep",
+      "patterns": ["keep the changes", "keep it", "keep the code", "merge the changes"]
+    },
+    {
+      "id": "code-diff",
+      "tool": "code_diff",
+      "patterns": ["show diff", "show the diff", "show me the diff"]
+    },
+    {
+      "id": "code-discard",
+      "tool": "code_discard",
+      "patterns": [
+        "discard the changes",
+        "discard it",
+        "discard the code",
+        "throw away the changes"
       ]
     },
     {

@@ -54,6 +54,7 @@ export function reduceChat(state: ChatState, event: AgentEvent): ChatState {
         id: event.id,
         role: 'receipt',
         status: event.status,
+        image: event.image,
         text: event.text,
       } as const;
       return { ...state, messages: upsert(state.messages, receipt) };

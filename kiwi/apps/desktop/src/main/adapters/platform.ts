@@ -3,15 +3,20 @@ import { clipboard, Notification, shell } from 'electron';
 import type { PlatformPort } from '@kiwi/core';
 import type { AppsConfig } from '@kiwi/shared';
 import { launchAllowlistedApp } from './launcher';
-import { sandboxRoot, trashSandboxNote, writeSandboxNote } from './sandbox-notes';
+import { trashSandboxNote, writeSandboxNote } from './sandbox-notes';
 import { adjustSystemVolume } from './volume';
 
 export interface PlatformOptions {
   apps: AppsConfig;
+  sandboxRoot: () => string;
   onTimerFinished: (label: string) => void;
 }
 
-export function createElectronPlatform({ apps, onTimerFinished }: PlatformOptions): PlatformPort {
+export function createElectronPlatform({
+  apps,
+  sandboxRoot,
+  onTimerFinished,
+}: PlatformOptions): PlatformPort {
   const timers = new Map<string, NodeJS.Timeout>();
 
   return {

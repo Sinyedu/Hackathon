@@ -12,6 +12,8 @@ export const agentEventSchema = z.discriminatedUnion('type', [
     id: z.string(),
     status: receiptStatusSchema,
     text: z.string(),
+    /** Small proof image (data URL), e.g. a screenshot thumbnail. */
+    image: z.string().optional(),
   }),
   z.object({
     type: z.literal('confirmationRequested'),

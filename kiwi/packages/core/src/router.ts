@@ -8,7 +8,8 @@ export interface RoutedCall {
 
 const SLOT_PATTERNS: Record<string, string> = {
   amount: '\\d+(?:\\.\\d+)?|[a-z]+',
-  unit: '[a-z]+',
+  unit: '[a-z°]+',
+  language: '[a-z]+',
   text: '.+',
   target: '.+',
 };
@@ -80,6 +81,16 @@ function routeOpen(rawTarget: string, { apps, sites }: Resolvers): RoutedCall | 
   return looksLikeOneRequest ? { tool: 'open_app', args: { app: target } } : null;
 }
 
+/** Fills tool arguments from slots using the command's slotArgs mapping. */
+function mapSlots(command: CommandEntry, groups: Record<string, string>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(command.slotArgs).map(([slot, arg]) => {
+      const raw = (groups[slot] ?? '').trim();
+      return [arg, /^-?\d+(?:\.\d+)?$/.test(raw) ? Number(raw) : raw];
+    }),
+  );
+}
+
 function buildCall(
   command: CommandEntry,
   groups: Record<string, string>,
@@ -104,7 +115,7 @@ function buildCall(
         args: { ...command.args, query: (groups['text'] ?? '').trim() },
       };
     default:
-      return { tool: command.tool, args: { ...command.args } };
+      return { tool: command.tool, args: { ...command.args, ...mapSlots(command, groups) } };
   }
 }
 

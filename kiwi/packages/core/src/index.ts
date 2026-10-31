@@ -15,3 +15,8 @@ export * from './voice/sentences';
 export * from './voice/vad-segmenter';
 export * from './voice/voice-session';
 export * from './voice/wake-phrase';
+export * from './coding/replay-backend';
+export * from './files/convert';
+export * from './files/plan-sort';
+export * from './services';
+export * from './models';

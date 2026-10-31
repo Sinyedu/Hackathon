@@ -1,7 +1,8 @@
-import { StrictMode, useEffect } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ChatPanel } from '../chat/ChatPanel';
 import { useChat } from '../chat/use-chat';
+import { Wizard } from '../setup/Wizard';
 import { useMascotState } from '../mascot/use-mascot-state';
 import { useVoiceState } from '../mascot/use-voice-state';
 import '../styles/tokens.css';
@@ -10,6 +11,11 @@ function Panel() {
   const chat = useChat();
   const { state } = useMascotState();
   const voice = useVoiceState();
+  const [needsSetup, setNeedsSetup] = useState(false);
+
+  useEffect(() => {
+    void window.kiwi.settings.get().then((settings) => setNeedsSetup(!settings.setupDone));
+  }, []);
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent): void => {
@@ -20,6 +26,14 @@ function Panel() {
     window.addEventListener('keydown', closeOnEscape);
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, []);
+
+  if (needsSetup) {
+    return (
+      <main className="panel">
+        <Wizard onDone={() => setNeedsSetup(false)} />
+      </main>
+    );
+  }
 
   return (
     <ChatPanel
