@@ -64,6 +64,8 @@ The backend never downloads the model or runs inference at startup.
 | Frontend build + typecheck | `cd frontend && pnpm build` |
 | Frontend lint | `cd frontend && pnpm lint` |
 
+See `docs/DEPLOY.md` for phone access and the Vercel + tunnel deployment.
+
 ## URLs
 
 - Frontend: <http://localhost:5173>
@@ -76,4 +78,6 @@ The backend never downloads the model or runs inference at startup.
 | `backend/.env` | `OLLAMA_BASE_URL` | `http://localhost:11434` |
 | `backend/.env` | `OLLAMA_MODEL` | `qwen3:1.7b` |
 | `backend/.env` | `DATABASE_URL` | `sqlite:///./dockproof.db` |
-| `frontend/.env` | `VITE_API_URL` | `http://localhost:8000` |
+| `backend/.env` | `CORS_ORIGINS` | `http://localhost:5173` |
+| `backend/.env` | `CORS_ORIGIN_REGEX` | private-LAN dev origins |
+| `frontend/.env` | `VITE_API_URL` | unset = same host as the page, port 8000 |

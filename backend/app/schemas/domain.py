@@ -96,7 +96,7 @@ class Claim(BaseModel):
 
 class Reconciliation(BaseModel):
     id: str
-    status: str  # processing | needs_review | ready | failed
+    status: str  # processing | needs_review | ready | approved | failed
     documents: list[Document] = Field(default_factory=list)
     line_items: list[LineItem] = Field(default_factory=list)
     matches: list[Match] = Field(default_factory=list)

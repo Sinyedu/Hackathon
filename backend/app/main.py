@@ -1,13 +1,27 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import health, reconciliations
+from app.core.config import get_settings
+from app.core.db import init_db
 
-app = FastAPI(title="DockProof API")
 
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    init_db()
+    yield
+
+
+app = FastAPI(title="DockProof API", lifespan=lifespan)
+
+_settings = get_settings()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=_settings.cors_origin_list,
+    allow_origin_regex=_settings.cors_origin_regex or None,
     allow_methods=["*"],
     allow_headers=["*"],
 )

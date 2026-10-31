@@ -1,7 +1,10 @@
 import type { HealthResponse } from '../types/health'
 import type { Reconciliation } from '../types/reconciliation'
 
-const API_URL: string = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+// Unset VITE_API_URL -> same host as the page on port 8000, so a phone opening
+// http://<laptop-ip>:5173 talks to http://<laptop-ip>:8000 without extra config.
+const API_URL: string =
+  import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:8000`
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, init)

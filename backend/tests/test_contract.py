@@ -17,11 +17,6 @@ def test_unimplemented_routes_say_so() -> None:
     assert client.get("/api/reconciliations/abc").status_code == 501
 
 
-def test_init_db(tmp_path, monkeypatch) -> None:
-    from app.core.config import get_settings
-
-    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 't.db'}")
-    get_settings.cache_clear()
+def test_init_db(db) -> None:
     init_db()
-    get_settings.cache_clear()
-    assert (tmp_path / "t.db").exists()
+    assert db.exists()
