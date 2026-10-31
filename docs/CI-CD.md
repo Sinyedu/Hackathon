@@ -13,7 +13,7 @@ Keep `backend/requirements.txt` and `frontend/pnpm-lock.yaml` committed and in s
 
 ## CD (`.github/workflows/deploy-frontend.yml`)
 After CI succeeds on `main`, the frontend is built and deployed to Vercel production.
-It uses `VITE_API_URL` stored in the Vercel project (Settings -> Environment Variables).
+It builds with `VITE_API_URL` taken from the GitHub repository variable of the same name (see setup below).
 
 **One-time setup** (the deploy step is skipped until all three secrets exist):
 1. Create a Vercel token: vercel.com -> Account Settings -> Tokens.
@@ -22,6 +22,9 @@ It uses `VITE_API_URL` stored in the Vercel project (Settings -> Environment Var
    project settings.
 3. GitHub repo -> Settings -> Secrets and variables -> Actions -> add:
    `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+   Then, on the **Variables** tab (not Secrets), add `VITE_API_URL` = your current tunnel URL.
+   Vercel cannot hand "Sensitive" variables to the CLI, so the deploy workflow takes the API URL
+   from this GitHub variable instead. Update it whenever the tunnel URL changes.
 4. Avoid double deploys: Vercel's own Git integration also deploys every push. Once the secrets work,
    turn off its production deploys by adding to `frontend/vercel.json`:
    ```json

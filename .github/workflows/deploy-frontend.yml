@@ -38,15 +38,29 @@ jobs:
         if: steps.gate.outputs.enabled == 'true'
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: pnpm/action-setup@v4
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          version: 11
       - uses: actions/setup-node@v4
         if: steps.gate.outputs.enabled == 'true'
         with:
           node-version: 24
       # Run from the repo root: the Vercel project's Root Directory is `frontend`.
-      # `vercel pull` fetches the project's env vars (VITE_API_URL) for the build.
+      # `vercel pull` cannot download variables marked "Sensitive" (it writes the placeholder
+      # [SENSITIVE]), so VITE_API_URL comes from the GitHub repository variable of the same name.
       - name: Deploy
         if: steps.gate.outputs.enabled == 'true'
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
         run: |
           npx --yes vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+          if [ -n "$VITE_API_URL" ]; then
+            sed -i '/^VITE_API_URL=/d' .vercel/.env.production.local
+          fi
+          if grep -q '^VITE_API_URL=.*\[SENSITIVE\]' .vercel/.env.production.local; then
+            echo "::error::VITE_API_URL is a Sensitive Vercel variable and cannot be pulled. Add a GitHub repository variable VITE_API_URL (Settings > Secrets and variables > Actions > Variables) or make the Vercel variable non-sensitive."
+            exit 1
+          fi
           npx --yes vercel@latest build --prod --token="$VERCEL_TOKEN"
           npx --yes vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
