@@ -1,6 +1,6 @@
 # Kiwi
 
-A local-first desktop assistant: an animated mascot in a corner of the screen with a chat panel docked below it. See [AGENTS.md](AGENTS.md) for product rules and [docs/steps](docs/steps) for the build plan. Current status: **step 5**: mascot, chat panel, fast-path commands, a local model with tool calling, voice, research, screen description, sandbox file sorting, optional code delegation, first-run setup.
+A local-first research and note-taking assistant for your desktop: an animated mascot in a corner of the screen with a chat panel docked below it. See [AGENTS.md](AGENTS.md) for product rules and [docs/steps](docs/steps) for the build plan. Current status: **step 5**: mascot, chat panel, fast-path commands, a local model with tool calling, voice, research, screen description, sandbox file sorting, optional code delegation, first-run setup.
 
 ## Quickstart
 

@@ -127,6 +127,47 @@ describe('agent model path', () => {
     expect(events.at(-1)).toEqual({ type: 'runFinished', outcome: 'error' });
   });
 
+  it('shows only the final answer, never reasoning or narration before a tool call', async () => {
+    const { agent, events } = createTestAgent({
+      llm: [
+        reply('<think>I should open github.</think>First I will open it.', [
+          { name: 'open_url', arguments: { url: 'https://github.com' } },
+        ]),
+        reply('<think>It worked, tell the user.</think>Opened GitHub for you.'),
+      ],
+    });
+    await agent.run('please get me to the place where code lives');
+    const said = events.flatMap((e) => (e.type === 'assistantDelta' ? [e.text] : []));
+    expect(said).toEqual(['Opened GitHub for you.']);
+  });
+
+  it('does not present "call the tool" text as an answer', async () => {
+    const { agent, events, platform } = createTestAgent({
+      llm: [reply('Call the screenshot_describe tool to take a screenshot.')],
+    });
+    await agent.run('tell me about this paper in front of me');
+    const said = events.flatMap((e) => (e.type === 'assistantDelta' ? [e.text] : []));
+    expect(said).toEqual(["I couldn't work out how to do that. Try rephrasing it."]);
+    expect(platform.calls).toEqual([]);
+    expect(events.at(-1)).toEqual({ type: 'runFinished', outcome: 'error' });
+  });
+
+  it('still shows ordinary answers that contain plain tool-like words', async () => {
+    const { agent, events } = createTestAgent({
+      llm: [reply('Honeybees do the research for their hive by dancing.')],
+    });
+    await agent.run('tell me something about bees please');
+    const said = events.flatMap((e) => (e.type === 'assistantDelta' ? [e.text] : []));
+    expect(said).toEqual(['Honeybees do the research for their hive by dancing.']);
+  });
+
+  it('falls back to a plain sentence when the reply was only reasoning', async () => {
+    const { agent, events } = createTestAgent({ llm: [reply('<think>hmm</think>')] });
+    await agent.run('tell me something profound please');
+    const said = events.flatMap((e) => (e.type === 'assistantDelta' ? [e.text] : []));
+    expect(said).toEqual(["I'm not sure how to help with that."]);
+  });
+
   it('explains how to start Ollama when it is unreachable', async () => {
     const { agent, events } = createTestAgent({
       llm: [{ ok: false, kind: 'unavailable', message: 'x' }],

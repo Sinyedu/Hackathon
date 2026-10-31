@@ -38,7 +38,7 @@ export function ChatPanel(props: ChatPanelProps) {
           {props.voice.engineNote}
         </p>
       )}
-      <MessageList messages={messages} />
+      <MessageList messages={messages} working={busy && !confirming} />
       {messages.length === 0 && <QuickActions onPick={props.onSend} />}
       {confirming && props.onConfirm && <ConfirmBar onAnswer={props.onConfirm} />}
       {busy && !confirming && props.onCancel && (

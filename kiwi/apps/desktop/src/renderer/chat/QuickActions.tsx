@@ -1,8 +1,8 @@
 const QUICK_ACTIONS = [
-  { label: 'Open a new tab', text: 'open a new tab' },
-  { label: 'Open GitHub', text: 'open github' },
-  { label: 'Set a 5-minute timer', text: 'set a timer for 5 minutes' },
-  { label: 'Take a note', text: 'take a note buy milk' },
+  { label: 'Research a topic', text: 'research how honeybees make honey' },
+  { label: 'What am I reading?', text: 'what is on my screen' },
+  { label: 'Note my clipboard', text: 'read my clipboard and save it as a note' },
+  { label: 'Take a note', text: 'take a note read the paper on sleep' },
 ] as const;
 
 export function QuickActions({ onPick }: { onPick: (text: string) => void }) {

@@ -1,6 +1,6 @@
 # Product: Kiwi
 
-Kiwi is a downloadable desktop assistant. A cute animated mascot lives in a corner of the screen and a small chat panel docks directly below it. The user types, or says "Hey Kiwi", and Kiwi acts on the computer: opens apps and links, searches, researches, sets timers and notes, controls volume, describes the screen, sorts files in a sandbox folder, and can delegate coding tasks.
+Kiwi is a downloadable desktop assistant that specializes in research and note-taking: it helps you understand what you are reading and keeps what matters. A cute animated mascot lives in a corner of the screen and a small chat panel docks directly below it. The user types, or says "Hey Kiwi", and Kiwi acts on the computer: opens apps and links, searches, researches, sets timers and notes, controls volume, describes the screen, sorts files in a sandbox folder, and can delegate coding tasks.
 
 ## Users
 

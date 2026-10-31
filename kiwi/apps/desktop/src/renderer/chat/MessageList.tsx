@@ -23,22 +23,39 @@ function Message({ message }: { message: ChatMessage }) {
   );
 }
 
-export function MessageList({ messages }: { messages: ChatMessage[] }) {
+/** Shown while Kiwi works, so nothing of its reasoning has to be displayed. */
+function WorkingLoader() {
+  return (
+    <li className="msg msg--assistant msg--working" role="status" aria-label="Kiwi is working">
+      <span className="loader-dot" />
+      <span className="loader-dot" />
+      <span className="loader-dot" />
+    </li>
+  );
+}
+
+export function MessageList({
+  messages,
+  working = false,
+}: {
+  messages: ChatMessage[];
+  working?: boolean;
+}) {
   const end = useRef<HTMLLIElement>(null);
   useEffect(() => {
     end.current?.scrollIntoView({ block: 'end' });
-  }, [messages]);
+  }, [messages, working]);
 
-  if (messages.length === 0) {
+  if (messages.length === 0 && !working) {
     return (
       <div className="empty">
-        <p className="empty-kicker">READY WHEN YOU ARE</p>
-        <p className="empty-title">Tell me what to do.</p>
+        <p className="empty-kicker">RESEARCH &amp; NOTES</p>
+        <p className="empty-title">What are you reading?</p>
         <p>
-          Say it naturally. I can open things, search, set timers, take notes, or do a few actions
-          in a row.
+          I can look into a topic, tell you what is on your screen, and keep the parts that matter
+          as notes.
         </p>
-        <p className="empty-example">“Open a new tab and search for cozy cafés.”</p>
+        <p className="empty-example">“Research how honeybees make honey.”</p>
       </div>
     );
   }
@@ -47,6 +64,7 @@ export function MessageList({ messages }: { messages: ChatMessage[] }) {
       {messages.map((message) => (
         <Message key={message.id} message={message} />
       ))}
+      {working && <WorkingLoader />}
       <li ref={end} aria-hidden="true" />
     </ol>
   );

@@ -247,7 +247,10 @@
         "describe my screen",
         "describe the screen",
         "look at my screen",
-        "what am i looking at"
+        "what am i looking at",
+        "what am i reading",
+        "what am i reading right now",
+        "what am i reading here"
       ]
     },
     {
