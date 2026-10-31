@@ -6,6 +6,7 @@ import { ConfirmBar } from './ConfirmBar';
 import { MessageList } from './MessageList';
 import { PanelHeader } from './PanelHeader';
 import { QuickActions } from './QuickActions';
+import { MicButton, VoiceSettingsForm } from './VoiceControls';
 
 interface ChatPanelProps {
   state: MascotState;
@@ -18,6 +19,12 @@ interface ChatPanelProps {
   onConfirm?: (accepted: boolean) => void;
   onUndo?: () => void;
   onCancel?: () => void;
+  /** Voice extras; absent in the static gallery. */
+  voice?: {
+    engineNote: string | null;
+    devices: { id: string; label: string }[];
+    latencies: Record<string, number>;
+  };
 }
 
 export function ChatPanel(props: ChatPanelProps) {
@@ -25,6 +32,11 @@ export function ChatPanel(props: ChatPanelProps) {
   return (
     <main className="panel">
       <PanelHeader state={state} micActive={micActive} onUndo={props.onUndo} />
+      {props.voice?.engineNote && (
+        <p className="engine-note" role="status">
+          {props.voice.engineNote}
+        </p>
+      )}
       <MessageList messages={messages} />
       {messages.length === 0 && <QuickActions onPick={props.onSend} />}
       {confirming && props.onConfirm && <ConfirmBar onAnswer={props.onConfirm} />}
@@ -34,6 +46,24 @@ export function ChatPanel(props: ChatPanelProps) {
         </button>
       )}
       <Composer disabled={busy && !confirming} onSend={props.onSend} />
+      {props.voice && (
+        <>
+          <div className="panel-actions">
+            <MicButton active={micActive} />
+          </div>
+          <details>
+            <summary>Voice settings</summary>
+            <VoiceSettingsForm devices={props.voice.devices} />
+          </details>
+          {import.meta.env.DEV && (
+            <p className="debug-latency">
+              {Object.entries(props.voice.latencies)
+                .map(([stage, ms]) => `${stage} ${ms}ms`)
+                .join(' · ') || 'No voice latency yet'}
+            </p>
+          )}
+        </>
+      )}
     </main>
   );
 }

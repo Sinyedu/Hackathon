@@ -4,7 +4,16 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/out/**', '**/dist/**', '**/release/**', '**/coverage/**', '**/node_modules/**'] },
+  {
+    ignores: [
+      '**/out/**',
+      '**/dist/**',
+      '**/release/**',
+      '**/coverage/**',
+      '**/*.worklet.js',
+      '**/node_modules/**',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {

@@ -1,5 +1,11 @@
 import { useEffect, useReducer, useState } from 'react';
-import { mascotEventsFor, mascotTimeoutMs, reduceMascot, type MascotState } from '@kiwi/core';
+import {
+  mascotEventsFor,
+  mascotEventsForVoice,
+  mascotTimeoutMs,
+  reduceMascot,
+  type MascotState,
+} from '@kiwi/core';
 
 export interface BubbleContent {
   text: string;
@@ -17,6 +23,14 @@ export function useMascotState(): { state: MascotState; bubble: BubbleContent | 
         for (const mascotEvent of mascotEventsFor(event)) dispatch(mascotEvent);
         if (event.type === 'receipt')
           setBubble((current) => ({ text: event.text, key: (current?.key ?? 0) + 1 }));
+      }),
+    [],
+  );
+
+  useEffect(
+    () =>
+      window.kiwi.voice.onEvent((event) => {
+        for (const mascotEvent of mascotEventsForVoice(event)) dispatch(mascotEvent);
       }),
     [],
   );

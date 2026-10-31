@@ -1,6 +1,6 @@
 # Kiwi
 
-A local-first desktop assistant: an animated mascot in a corner of the screen with a chat panel docked below it. See [AGENTS.md](AGENTS.md) for product rules and [docs/steps](docs/steps) for the build plan. Current status: **step 3 (brain)**: mascot, chat panel, fast-path commands and a local model with tool calling.
+A local-first desktop assistant: an animated mascot in a corner of the screen with a chat panel docked below it. See [AGENTS.md](AGENTS.md) for product rules and [docs/steps](docs/steps) for the build plan. Current status: **step 4 (voice)**: mascot, chat panel, fast-path commands, a local model with tool calling, and voice.
 
 ## Quickstart
 
@@ -31,6 +31,12 @@ ollama pull qwen3:1.7b
 ```
 
 If Ollama is not running, the fast path still works and the model path tells you what to start.
+
+## Voice
+
+Hold the **Hold to talk** button in the panel, or press `Ctrl/Cmd+Shift+Space` (tap to talk; it stops after 0.8 s of silence). Turn on "Always listen for Hey Kiwi" under Voice settings in the panel. `Esc` or "Kiwi stop" cancels speech, the current run and any pending confirmation. A "Mic" badge shows on Kiwi whenever the microphone is open; audio is never saved.
+
+The first time voice is used, a small Whisper model (about 40 MB) is downloaded from huggingface.co. This is the only network use outside explicit web tools. See `docs/decisions/0002-voice.md` for what was and was not measured.
 
 ## Config files
 

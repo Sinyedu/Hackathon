@@ -8,7 +8,7 @@ const trayIconPath = (): string =>
     ? join(process.resourcesPath, 'resources', 'tray.png')
     : join(app.getAppPath(), 'resources', 'tray.png');
 
-export function createTray(controller: MascotController): Tray {
+export function createTray(controller: MascotController, onStop: () => void): Tray {
   const icon = nativeImage.createFromPath(trayIconPath());
   const tray = new Tray(icon);
   tray.setToolTip('Kiwi');
@@ -18,6 +18,7 @@ export function createTray(controller: MascotController): Tray {
       ...(process.env['ELECTRON_RENDERER_URL']
         ? [{ label: 'State gallery (dev)', click: () => void createGalleryWindow() }]
         : []),
+      { label: 'Stop everything', click: onStop },
       { type: 'separator' },
       { label: 'Quit', click: () => app.quit() },
     ]),

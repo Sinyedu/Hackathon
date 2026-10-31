@@ -1,5 +1,28 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { agentEventSchema, ipcChannels, pingResponseSchema, type KiwiApi } from '@kiwi/shared';
+import {
+  agentEventSchema,
+  ipcChannels,
+  pingResponseSchema,
+  voiceCommandSchema,
+  voiceEventSchema,
+  voiceSettingsSchema,
+  type KiwiApi,
+} from '@kiwi/shared';
+import type { ZodType } from 'zod';
+
+function subscribe<T>(
+  channel: string,
+  schema: ZodType<T>,
+  handler: (value: T) => void,
+): () => void {
+  const listener = (_event: unknown, payload: unknown): void => {
+    const parsed = schema.safeParse(payload);
+    if (parsed.success) handler(parsed.data);
+    else console.error(`Ignored malformed message on ${channel}`, parsed.error.message);
+  };
+  ipcRenderer.on(channel, listener);
+  return () => ipcRenderer.removeListener(channel, listener);
+}
 
 const api: KiwiApi = {
   async ping(request) {
@@ -22,15 +45,19 @@ const api: KiwiApi = {
     confirm: (id, accepted) => ipcRenderer.send(ipcChannels.chatConfirm, { id, accepted }),
     cancel: () => ipcRenderer.send(ipcChannels.chatCancel),
   },
-  onAgentEvent(handler) {
-    const listener = (_event: unknown, payload: unknown): void => {
-      const parsed = agentEventSchema.safeParse(payload);
-      if (parsed.success) handler(parsed.data);
-      else console.error('Ignored malformed agent event', parsed.error.message);
-    };
-    ipcRenderer.on(ipcChannels.agentEvent, listener);
-    return () => ipcRenderer.removeListener(ipcChannels.agentEvent, listener);
+  onAgentEvent: (handler) => subscribe(ipcChannels.agentEvent, agentEventSchema, handler),
+  voice: {
+    report: (event) => ipcRenderer.send(ipcChannels.voiceReport, event),
+    onEvent: (handler) => subscribe(ipcChannels.voiceEvent, voiceEventSchema, handler),
+    onCommand: (handler) => subscribe(ipcChannels.voiceCommand, voiceCommandSchema, handler),
+    pushStart: () => ipcRenderer.send(ipcChannels.voicePushStart),
+    pushEnd: () => ipcRenderer.send(ipcChannels.voicePushEnd),
   },
+  settings: {
+    get: async () => voiceSettingsSchema.parse(await ipcRenderer.invoke(ipcChannels.settingsGet)),
+    update: (change) => ipcRenderer.send(ipcChannels.settingsUpdate, change),
+  },
+  stopAll: () => ipcRenderer.send(ipcChannels.stopAll),
 };
 
 contextBridge.exposeInMainWorld('kiwi', api);

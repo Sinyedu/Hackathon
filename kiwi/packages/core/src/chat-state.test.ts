@@ -1,7 +1,7 @@
-import type { AgentEvent } from '@kiwi/shared';
+import type { AgentEvent, VoiceEvent } from '@kiwi/shared';
 import { describe, expect, it } from 'vitest';
 import { initialChatState, reduceChat } from './chat-state';
-import { mascotEventsFor } from './mascot-events';
+import { mascotEventsFor, mascotEventsForVoice } from './mascot-events';
 
 const apply = (events: AgentEvent[]) => events.reduce(reduceChat, initialChatState);
 
@@ -66,5 +66,19 @@ describe('mascotEventsFor', () => {
     [{ type: 'assistantDone', id: 'a' }, []],
   ])('%j', (event, expected) => {
     expect(mascotEventsFor(event).map((e) => e.type)).toEqual(expected);
+  });
+});
+
+describe('mascotEventsForVoice', () => {
+  it.each<[VoiceEvent, string[]]>([
+    [{ type: 'captureStart', via: 'wake' }, ['listenStart']],
+    [{ type: 'captureEnd' }, ['listenEnd']],
+    [{ type: 'speakStart' }, ['speakStart']],
+    [{ type: 'speakEnd' }, ['speakEnd']],
+    [{ type: 'stopped' }, ['cancel']],
+    [{ type: 'level', value: 0.5 }, []],
+    [{ type: 'transcript', text: 'x' }, []],
+  ])('%j', (event, expected) => {
+    expect(mascotEventsForVoice(event).map((e) => e.type)).toEqual(expected);
   });
 });

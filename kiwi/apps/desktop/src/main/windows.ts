@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { BrowserWindow, screen } from 'electron';
 import { OVERLAY_SIZE, PANEL_SIZE, type Settings } from '@kiwi/shared';
 
-type Page = 'overlay' | 'panel' | 'gallery';
+type Page = 'overlay' | 'panel' | 'gallery' | 'voice';
 
 const webPreferences = {
   preload: join(__dirname, '../preload/index.js'),
@@ -71,5 +71,18 @@ export function createGalleryWindow(): BrowserWindow {
     webPreferences,
   });
   loadPage(window, 'gallery');
+  return window;
+}
+
+/** Hidden window that owns the microphone and speech engines. It must never be throttled. */
+export function createVoiceWindow(): BrowserWindow {
+  const window = new BrowserWindow({
+    show: false,
+    width: 320,
+    height: 200,
+    skipTaskbar: true,
+    webPreferences: { ...webPreferences, backgroundThrottling: false },
+  });
+  loadPage(window, 'voice');
   return window;
 }

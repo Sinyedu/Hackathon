@@ -41,3 +41,7 @@ user text -> Agent.run
 - The agent emits `AgentEvent`s only (`packages/shared`). Main broadcasts them to both windows; `reduceChat` builds the chat list and `mascotEventsFor` + `reduceMascot` drive the mascot.
 - Config files in `userData`: `settings.json`, `apps.json`, `sites.json`, `commands.json`. Created from defaults, validated with zod; an invalid file falls back to defaults and says so in the chat.
 - Safety: allowlisted apps only, http/https only, notes only inside `~/KiwiSandbox` (symlinks resolved, "delete" = `.trash`), write tools need Yes, tool results are fenced as untrusted data.
+
+## Voice (step 4)
+
+A hidden `voice` window owns the microphone, Whisper (worker) and speech synthesis. `VoiceSession` in core ties them together through ports (`AudioInputPort`, `SpeechToTextPort`, `TextToSpeechPort`); it contains the endpointing, VAD segmenter, wake-phrase parser and spoken-reply logic, all unit-tested with fakes. The window sends commands to the agent with `chat.send`, reports `VoiceEvent`s that main relays to the overlay (mic badge, listening ring, beak) and panel (settings, engine notes, latency debug line in dev), and receives `VoiceCommand`s from main (push-to-talk, hotkey, stop, configure). `stopAll` cancels the agent, pending confirmations and audio together.

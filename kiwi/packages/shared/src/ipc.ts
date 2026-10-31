@@ -1,5 +1,8 @@
 import { z } from 'zod';
+import { voiceSettingsSchema } from './settings';
 import type { AgentEvent } from './agent-events';
+import type { VoiceCommand, VoiceEvent } from './voice';
+import type { VoiceSettings } from './settings';
 
 /** Every IPC channel name lives here and nowhere else. */
 export const ipcChannels = {
@@ -15,6 +18,14 @@ export const ipcChannels = {
   chatConfirm: 'kiwi:chat:confirm',
   chatCancel: 'kiwi:chat:cancel',
   agentEvent: 'kiwi:agent:event',
+  voiceReport: 'kiwi:voice:report',
+  voiceEvent: 'kiwi:voice:event',
+  voiceCommand: 'kiwi:voice:command',
+  voicePushStart: 'kiwi:voice:push-start',
+  voicePushEnd: 'kiwi:voice:push-end',
+  stopAll: 'kiwi:stop-all',
+  settingsGet: 'kiwi:settings:get',
+  settingsUpdate: 'kiwi:settings:update',
 } as const;
 
 export const pingRequestSchema = z.object({ message: z.string().max(200) });
@@ -24,6 +35,8 @@ export const dragMoveSchema = z.object({ dx: z.number(), dy: z.number() });
 
 export const chatSendSchema = z.object({ text: z.string().trim().min(1).max(2000) });
 export const chatConfirmSchema = z.object({ id: z.string(), accepted: z.boolean() });
+
+export const voiceSettingsPatchSchema = voiceSettingsSchema.partial();
 
 export type PingRequest = z.infer<typeof pingRequestSchema>;
 export type PingResponse = z.infer<typeof pingResponseSchema>;
@@ -49,6 +62,20 @@ export interface KiwiApi {
     confirm(id: string, accepted: boolean): void;
     cancel(): void;
   };
+  voice: {
+    /** Called by the voice window to report what it is doing. */
+    report(event: VoiceEvent): void;
+    onEvent(handler: (event: VoiceEvent) => void): () => void;
+    onCommand(handler: (command: VoiceCommand) => void): () => void;
+    pushStart(): void;
+    pushEnd(): void;
+  };
+  settings: {
+    get(): Promise<VoiceSettings>;
+    update(change: Partial<VoiceSettings>): void;
+  };
+  /** Cancel audio, the agent run and any pending confirmation at once. */
+  stopAll(): void;
   /** Subscribe to agent events; returns an unsubscribe function. */
   onAgentEvent(handler: (event: AgentEvent) => void): () => void;
 }

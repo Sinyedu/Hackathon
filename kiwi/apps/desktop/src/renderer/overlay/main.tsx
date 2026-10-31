@@ -4,6 +4,7 @@ import { MASCOT_HIT_AREA } from '@kiwi/shared';
 import { Mascot } from '../mascot/Mascot';
 import { SpeechBubble } from '../mascot/SpeechBubble';
 import { useMascotState } from '../mascot/use-mascot-state';
+import { useVoiceState } from '../mascot/use-voice-state';
 import '../styles/tokens.css';
 import './overlay.css';
 import { useMascotDrag } from './use-mascot-drag';
@@ -11,13 +12,16 @@ import { useMascotDrag } from './use-mascot-drag';
 function Overlay() {
   const drag = useMascotDrag(() => window.kiwi.panel.toggle());
   const { state, bubble } = useMascotState();
+  const voice = useVoiceState();
   return (
     <>
-      {bubble && (
-        <div className="overlay-bubble">
-          <SpeechBubble key={bubble.key} kind="action" text={bubble.text} />
-        </div>
-      )}
+      <div className="overlay-bubble">
+        {voice.heard ? (
+          <SpeechBubble key={`h${voice.heard.key}`} kind="transcript" text={voice.heard.text} />
+        ) : (
+          bubble && <SpeechBubble key={bubble.key} kind="action" text={bubble.text} />
+        )}
+      </div>
       <button
         type="button"
         className="mascot-button"
@@ -25,8 +29,14 @@ function Overlay() {
         style={{ ...MASCOT_HIT_AREA, left: MASCOT_HIT_AREA.x, top: MASCOT_HIT_AREA.y }}
         {...drag}
       >
-        <Mascot state={state} />
+        <Mascot state={state} micLevel={voice.micLevel} mouthOpen={voice.mouthOpen} />
       </button>
+      {voice.micOn && (
+        <span className="mic-indicator" role="img" aria-label="Microphone is on">
+          <span className="mic-indicator-dot" />
+          Mic
+        </span>
+      )}
     </>
   );
 }
