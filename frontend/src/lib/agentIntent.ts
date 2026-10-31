@@ -1,10 +1,11 @@
 import type { LocalFile } from '../services/session'
 
-export type Intent = 'brief' | 'findings' | 'recover' | 'export' | 'approve' | 'files' | 'import' | 'ask'
+export type Intent = 'walkthrough' | 'brief' | 'findings' | 'recover' | 'export' | 'approve' | 'files' | 'import' | 'ask'
 
 // Commands are matched locally so actions never depend on the model's wording.
 // Anything that is not a command goes to the local model as a question.
 const RULES: [Intent, RegExp][] = [
+  ['walkthrough', /\b(walk me through|walkthrough|explain (the |this )?(screen|page|result)|what am i (looking at|seeing)|show me around|give me a tour)\b/i],
   ['approve', /\b(approve|sign (it )?off|accept the claim)\b/i],
   ['export', /\b(export|download|save (the )?(brief|briefing|report|summary))\b/i],
   ['import', /\b(import|load|bring in|open (the )?(purchase|delivery|po|dn|both))\b/i],

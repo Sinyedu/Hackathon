@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from app.api import assistant, catalog, health, reconciliations, recovery, sessions
 from app.core.config import get_settings
+from app.services import speech
 from app.services.inbox import watch
 from app.services.suppliers import seed_suppliers
 
@@ -17,10 +18,12 @@ from app.services.suppliers import seed_suppliers
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     seed_suppliers()
     watcher = asyncio.create_task(watch())
+    warmup = asyncio.create_task(asyncio.to_thread(speech.warm))  # background: never blocks startup
     try:
         yield
     finally:
         watcher.cancel()
+        warmup.cancel()
         try:
             await watcher
         except asyncio.CancelledError:

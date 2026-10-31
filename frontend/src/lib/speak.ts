@@ -16,9 +16,18 @@ export function speak(text: string, hooks: SpeakHooks = {}): void {
   window.speechSynthesis.cancel()
   const utterance = new SpeechSynthesisUtterance(text)
   utterance.rate = 1.04
+  // Some systems (notably Linux without a speech engine installed) never fire onend; don't hang on that.
+  let finished = false
+  const finish = () => {
+    if (finished) return
+    finished = true
+    window.clearTimeout(watchdog)
+    hooks.onEnd?.()
+  }
+  const watchdog = window.setTimeout(() => { window.speechSynthesis.cancel(); finish() }, 4000 + text.length * 90)
   utterance.onstart = () => hooks.onStart?.()
-  utterance.onend = () => hooks.onEnd?.()
-  utterance.onerror = () => hooks.onEnd?.()
+  utterance.onend = finish
+  utterance.onerror = finish
   utterance.onboundary = (event) => {
     if (event.name === 'word') hooks.onWord?.(event.charIndex)
   }

@@ -5,6 +5,7 @@ import LiveDot from '../components/LiveDot'
 import ChaosDock from '../components/ChaosDock'
 import Verdict, { Questions } from '../components/Verdict'
 import AgentMode from '../components/agent/AgentMode'
+import { useWakeWord } from '../hooks/useWakeWord'
 import ParticleOrb from '../components/agent/ParticleOrb'
 import { buildBrief } from '../lib/brief'
 import { createSession, getResult, getSession, joinSession, lanIp, resetSession, uploadSession, API } from '../services/session'
@@ -101,12 +102,26 @@ function Upload({ session, isDock, onError }: { session: Session; isDock: boolea
   </section>
 }
 
+const WAKE_LABEL = { off: 'Hey agent: off', starting: 'Hey agent: starting…', listening: 'Say “Hey agent”', suspended: 'Hey agent: click the page once', denied: 'Hey agent: mic blocked', unsupported: 'Hey agent: needs HTTPS' } as const
+
 export default function LiveWorkspace({ isDock = false }: { isDock?: boolean }) {
   const { session, result, error, setError, refresh } = useLiveSession(isDock)
   // Keyed to the current result so the generator closes itself once its delivery is read.
   const [chaosTarget, setChaosTarget] = useState<string | null>(null)
   const chaosOpen = chaosTarget === (result?.id || 'none')
   const [agentOpen, setAgentOpen] = useState(false)
+  const [wake, setWake] = useState<string | null>(null) // null: opened by button; otherwise what followed "Hey agent"
+  const [listenOn, setListenOn] = useState(() => localStorage.getItem('dockproof.wake') !== 'off')
+  const micOk = window.isSecureContext && !!navigator.mediaDevices?.getUserMedia
+  const wakeWord = useWakeWord(listenOn && micOk && !agentOpen && !!session, (command) => { setWake(command); setAgentOpen(true) })
+  const wakeKey = !listenOn ? 'off' : agentOpen ? 'listening' : wakeWord.state // while the agent is open it does the listening
+  const wakeNote = wakeWord.error ?? (wakeWord.heard ? `Heard “${wakeWord.heard}”` : null)
+  const toggleListen = () => {
+    const next = !listenOn
+    setListenOn(next)
+    try { localStorage.setItem('dockproof.wake', next ? 'on' : 'off') } catch { /* preference not remembered */ }
+  }
+  const closeAgent = () => { setAgentOpen(false); setWake(null) }
   const brief = useMemo(() => buildBrief(session, result), [session, result])
   const reading = session?.events.at(-1)?.type === 'reading'
   return <div className={`app${isDock ? ' app--dock' : ''}`}>
@@ -114,7 +129,11 @@ export default function LiveWorkspace({ isDock = false }: { isDock?: boolean }) 
       <a className="wordmark" href={isDock ? undefined : '/'}><span className="wordmark__mark" aria-hidden /> DockProof{isDock && <small>Dock</small>}</a>
       <div className="topbar__right">
         {session && <LiveDot label="Live" active />}
-        <button className="agent-btn" onClick={() => setAgentOpen(true)} disabled={!session}>
+        {wakeNote && <span className="wake-note" role="status" title={wakeNote}>{wakeNote}</span>}
+        {micOk && <button className="wake-toggle" onClick={toggleListen} aria-pressed={listenOn} title="Say “Hey agent” anywhere to open the agent. Audio stays on this computer.">
+          <i className={`wake-dot wake-dot--${wakeKey}${wakeWord.capturing ? ' wake-dot--hearing' : ''}`} aria-hidden />{WAKE_LABEL[wakeKey]}
+        </button>}
+        <button className="agent-btn" onClick={() => { setWake(null); setAgentOpen(true) }} disabled={!session}>
           <ParticleOrb className="agent-btn__orb" phase="idle" dots={90} /> Speak with agent
         </button>
       </div>
@@ -140,6 +159,6 @@ export default function LiveWorkspace({ isDock = false }: { isDock?: boolean }) 
         </footer>}
       </>}
     </main>
-    {agentOpen && <AgentMode session={session} result={result} brief={brief} refresh={refresh} onClose={() => setAgentOpen(false)} />}
+    {agentOpen && <AgentMode session={session} result={result} brief={brief} wake={wake} refresh={refresh} onClose={closeAgent} />}
   </div>
 }

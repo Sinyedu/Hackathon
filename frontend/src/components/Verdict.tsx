@@ -35,6 +35,9 @@ export function Questions({ session, result, refresh, onError }: Omit<Props, 'is
   )
 }
 
+/** "R-123-purchase_order: Tomatoes 24 case" -> "Purchase order: Tomatoes 24 case" */
+const readable = (source: string) => source.replace(/^[^:]*-purchase_order: /, 'Purchase order: ').replace(/^[^:]*-delivery_note: /, 'Delivery note: ').replace(/^[^:]*-invoice: /, 'Invoice: ')
+
 export default function Verdict({ session, result, refresh, onError, isDock }: Props) {
   const [busy, setBusy] = useState(false)
   const [claimOpen, setClaimOpen] = useState(false)
@@ -104,8 +107,8 @@ export default function Verdict({ session, result, refresh, onError, isDock }: P
       {result.discrepancies.map((item) => (
         <details className="finding" key={item.catalog_item_id} open={!isDock && shortages.length === 1}>
           <summary><span>{item.description}</span><b>{item.difference} {item.unit}</b><ChevronDown size={18} aria-hidden /></summary>
-          <div className="finding__evidence">{item.evidence.map((source, index) => <code key={index}>{source}</code>)}</div>
-          {item.difference.startsWith('-') && !isDock && <RecoveryPanel reconciliationId={result.id} itemId={item.catalog_item_id} title="Replace the shortage" documents={result.documents} />}
+          <div className="finding__evidence">{item.evidence.map((source, index) => <code key={index}>{readable(source)}</code>)}</div>
+          {item.difference.startsWith('-') && !isDock && <div className="recovery-anchor"><RecoveryPanel reconciliationId={result.id} itemId={item.catalog_item_id} title="Replace the shortage" documents={result.documents} /></div>}
         </details>
       ))}
 

@@ -5,6 +5,7 @@ Transcripts are untrusted text like any other input.
 """
 
 import io
+import logging
 from functools import lru_cache
 from typing import Any
 
@@ -15,6 +16,9 @@ from app.core.config import get_settings
 # Measured on noisy synthetic speech: halves word errors versus no hint.
 INITIAL_PROMPT = ("Hey agent. DockProof delivery check. Purchase order, delivery note, tomatoes, potatoes, "
                   "olive oil, mozzarella, cases, sacks, shortage, supplier, claim, FarmDirect, GreenSupply.")
+
+
+log = logging.getLogger(__name__)
 
 
 class SpeechError(Exception):
@@ -45,3 +49,12 @@ def transcribe(content: bytes) -> str:
         return " ".join(s.text.strip() for s in segments).strip()
     except Exception as exc:  # undecodable audio raises av/ctranslate2 errors
         raise SpeechError("Could not read the audio") from exc
+
+
+def warm() -> None:
+    """Load (and on first run download) the model so the first voice request is not slow. Blocking."""
+    try:
+        _model()
+        log.info("Speech model %s ready", get_settings().whisper_model)
+    except SpeechUnavailable as exc:
+        log.warning("%s. Voice input will report this error until it is fixed.", exc)

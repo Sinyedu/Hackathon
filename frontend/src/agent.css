@@ -3,11 +3,6 @@
 @keyframes agent-in { from { clip-path: circle(22px at calc(100% - 96px) 34px); } to { clip-path: circle(150% at calc(100% - 96px) 34px); } }
 .agent__bar { display: flex; align-items: center; gap: 16px; height: 68px; padding: 0 clamp(12px, 3vw, 32px); border-bottom: 1px solid var(--rule); }
 .agent__name { font-weight: 700; letter-spacing: -.02em; }
-.agent__status { display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 12px; border-radius: 999px; background: var(--desk); color: var(--ink-2); font-size: 13px; font-weight: 600; }
-.agent__status i { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); }
-.agent__status--listening i { background: #0aa2d8; animation: live-pulse 1.2s ease-out infinite; }
-.agent__status--thinking i { background: #6a4dff; }
-.agent__status--speaking i { background: var(--cobalt); }
 .agent__bar-actions { display: flex; gap: 4px; margin-left: auto; }
 
 .agent__stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 420px); min-height: 0; }
@@ -17,16 +12,6 @@
 @keyframes orb-in { from { opacity: 0; transform: scale(.6); filter: blur(10px); } to { opacity: 1; transform: none; filter: none; } }
 .agent__caption { max-width: 36ch; min-height: 4.2em; margin: -8px 0 0; font-size: clamp(19px, 2vw, 23px); line-height: 1.4; font-weight: 500; letter-spacing: -.01em; text-align: center; text-wrap: pretty; }
 .agent__caption-next { color: var(--ink-3); transition: color .2s; }
-.agent__controls { display: flex; align-items: center; gap: 14px; width: min(100%, 520px); }
-.mic-btn { flex: none; display: grid; place-items: center; width: 68px; height: 68px; border: 0; border-radius: 50%; background: var(--cobalt); color: #fff; box-shadow: 0 10px 24px -10px rgba(35, 64, 255, .7); transition: transform .2s var(--ease-out), background .2s; }
-.mic-btn:hover:not(:disabled) { transform: scale(1.05); }
-.mic-btn:disabled { background: #c3c8d2; box-shadow: none; }
-.mic-btn--live { background: var(--tomato); box-shadow: 0 0 0 0 rgba(210, 50, 36, .4); animation: mic-ring 1.4s ease-out infinite; }
-@keyframes mic-ring { to { box-shadow: 0 0 0 16px rgba(210, 50, 36, 0); } }
-.agent__type { display: flex; align-items: center; flex: 1; min-width: 0; height: 52px; padding: 0 6px 0 18px; border: 1px solid var(--rule); border-radius: 999px; background: var(--paper); transition: border-color .15s; }
-.agent__type:focus-within { border-color: var(--cobalt); }
-.agent__type input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: 16px; }
-.agent__type input::placeholder { color: var(--ink-3); }
 .agent__prompts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 560px; }
 .agent__prompts button { height: 36px; padding: 0 14px; border: 1px solid var(--rule); border-radius: 999px; background: var(--paper); color: var(--ink-2); font-size: 14px; transition: border-color .15s, color .15s; }
 .agent__prompts button:hover:not(:disabled) { border-color: var(--cobalt); color: var(--cobalt); }
@@ -84,3 +69,44 @@
 .agent__files small { padding: 1px 6px; border-radius: 6px; background: var(--paper); font-size: 11px; font-weight: 600; }
 .agent__files button:hover:not(:disabled) { border-color: var(--cobalt); }
 .agent__files button:disabled { opacity: .5; }
+.agent__stage--solo { grid-template-columns: minmax(0, 1fr); }
+.agent__stage--solo .agent__voice { max-width: 760px; width: 100%; margin: 0 auto; }
+.agent__choose { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.agent__choose p { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin: 0; font-size: 14px; }
+.wake-toggle { height: 36px; padding: 0 12px; border: 1px solid var(--rule); border-radius: 999px; background: var(--paper); color: var(--ink-2); font-size: 13px; }
+.wake-toggle[aria-pressed='true'] { border-color: var(--cobalt); color: var(--cobalt); }
+
+/* Spotlight: what the agent is pointing at on the page, and the keywords it is reading out. */
+.agent-spot { outline: 3px solid var(--cobalt); outline-offset: 6px; border-radius: 12px; transition: outline-color .2s; animation: spot-pulse 1.6s ease-in-out infinite; }
+@keyframes spot-pulse { 50% { outline-offset: 9px; } }
+::highlight(agent-key) { background-color: #ffe58a; color: #0b0d12; }
+@media (prefers-reduced-motion: reduce) { .agent-spot { animation: none; } }
+
+/* Unified agent surface: orb, state, caption, one composer, three suggestions. */
+.agent__state { margin: -6px 0 0; color: var(--ink-2); font-size: 13px; font-weight: 600; letter-spacing: .02em; }
+.agent__state--listening { color: #0a82ad; }
+.agent__composer { display: flex; align-items: center; gap: 4px; width: min(100%, 560px); height: 56px; padding: 0 8px; border: 1px solid var(--rule); border-radius: 999px; background: var(--paper); transition: border-color .15s; }
+.agent__composer:focus-within { border-color: var(--cobalt); }
+.agent__composer input[type='text'] { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: none; font-size: 16px; }
+.agent__composer input::placeholder { color: var(--ink-3); }
+.icon-btn--live { background: var(--tomato); color: #fff; animation: mic-ring 1.4s ease-out infinite; }
+@keyframes mic-ring { 0% { box-shadow: 0 0 0 0 rgba(210, 50, 36, .45); } 100% { box-shadow: 0 0 0 12px rgba(210, 50, 36, 0); } }
+.agent__prompts { gap: 8px; }
+.agent__prompts button { height: 36px; padding: 0 14px; border: 1px solid var(--rule); border-radius: 999px; background: var(--paper); color: var(--ink-2); font-size: 14px; }
+
+/* Docked: while touring a result the panel shrinks to a bar so the page stays visible and gets pointed at. */
+.agent-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; display: flex; align-items: center; gap: 16px; padding: 12px clamp(12px, 3vw, 32px); background: var(--paper); border-top: 1px solid var(--rule); box-shadow: 0 -12px 32px rgba(11, 13, 18, .1); animation: dock-in .3s var(--ease-out) both; }
+@keyframes dock-in { from { transform: translateY(100%); } }
+.agent-dock__orb { flex: none; width: 64px; height: 64px; }
+.agent-dock__text { flex: 1; min-width: 0; max-height: 5.6em; overflow-y: auto; margin: 0; font-size: 17px; line-height: 1.4; font-weight: 500; }
+.agent-dock__actions { display: flex; gap: 6px; flex: none; }
+body.agent-docked .app { padding-bottom: 150px; }
+@media (max-width: 640px) { .agent-dock { flex-wrap: wrap; } .agent-dock__text { flex-basis: 100%; order: 3; font-size: 16px; } .agent-dock__actions { margin-left: auto; } }
+.wake-toggle { display: inline-flex; align-items: center; gap: 8px; }
+.wake-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
+.wake-dot--listening { background: #1a9d57; }
+.wake-dot--suspended, .wake-dot--starting { background: #e0a100; }
+.wake-dot--denied { background: var(--tomato); }
+.wake-dot--hearing { animation: live-pulse 0.9s ease-out infinite; background: var(--cobalt); }
+.wake-note { max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); font-size: 12px; }
+@media (max-width: 640px) { .wake-note { display: none; } .wake-toggle { padding: 0 10px; } }
