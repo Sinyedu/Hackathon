@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
-import { EVENT_LINES, intentOf, kindSaid, sectionFor, stripWake } from '../lib/agentIntent'
+import { EVENT_LINES, intentOf, kindSaid, sectionFor, sheetTabFor, stripWake } from '../lib/agentIntent'
+import { buildRows, summarise } from '../lib/compare'
 import { briefToMarkdown, type Brief } from '../lib/brief'
 import { errorMessage } from '../lib/errors'
 import { canSpeak, speak, stopSpeaking } from '../lib/speak'
@@ -21,6 +22,7 @@ interface Args {
   brief: Brief
   refresh: (id: string) => Promise<void>
   onGenerate: () => void
+  onShow: (tab: 'compare' | 'purchase_order' | 'delivery_note') => void
   /** The agent page is on screen; the first greeting waits for it. */
   active: boolean
   /** "Hey agent" heard on any page: bring the agent forward. */
@@ -30,7 +32,7 @@ interface Args {
 /** A suggested replacement the user can follow; shown as a card with a real link. */
 export interface Offer { supplier: string; summary: string; url: string; isSearch: boolean }
 
-export function useAgent({ inputs, session, result, brief, refresh, onGenerate, active, onWake }: Args) {
+export function useAgent({ inputs, session, result, brief, refresh, onGenerate, onShow, active, onWake }: Args) {
   const [log, setLog] = useState<AgentLine[]>([])
   const [caption, setCaption] = useState({ text: '', at: 0 })
   const [speaking, setSpeaking] = useState(false)
@@ -114,6 +116,12 @@ export function useAgent({ inputs, session, result, brief, refresh, onGenerate, 
     if (intent === 'brief') return say(brief.spoken)
     if (intent === 'export') { exportBrief(); return say('I downloaded the briefing as a Markdown file.') }
     if (intent === 'link') return openOffer()
+    if (intent === 'show') {
+      if (!result) return say('There are no documents to show yet. Add them first.')
+      const { bad, review } = summarise(buildRows(result))
+      onShow(sheetTabFor(text))
+      return say(`Here are the documents. ${bad ? `${bad} ${bad === 1 ? 'problem is' : 'problems are'} marked in red.` : 'Nothing is wrong.'}${review ? ` ${review} still need${review === 1 ? 's' : ''} your check.` : ''}`)
+    }
     if (intent === 'files') return run(() => docs.attach(text))
     if (intent === 'generate') { onGenerate(); return say('Opening test deliveries. Print one and I will read it as soon as it lands.') }
     if (intent === 'elaborate') return elaborate(text)

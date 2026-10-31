@@ -1,6 +1,6 @@
 import type { LocalFile } from '../services/session'
 
-export type Intent = 'brief' | 'findings' | 'elaborate' | 'recover' | 'export' | 'approve' | 'generate' | 'link' | 'files' | 'import' | 'ask'
+export type Intent = 'brief' | 'findings' | 'elaborate' | 'recover' | 'export' | 'approve' | 'generate' | 'link' | 'show' | 'files' | 'import' | 'ask'
 
 // Commands are matched locally so actions never depend on the model's wording.
 // Anything that is not a command goes to the local model as a question.
@@ -9,7 +9,8 @@ const RULES: [Intent, RegExp][] = [
   ['export', /\b(export|download|save (the )?(brief|briefing|report|summary))\b/i],
   ['link', /\b(replacement link|(open|follow|show)\b.*\b(link|supplier page)|where (can|do) i (buy|order|get))\b/i],
   ['generate', /\b(test deliver\w*|(generate|print|make|create) (me )?(a |the |some )?(delivery|deliveries|test|files?|documents?))\b/i],
-  ['files', /\b(attach|upload|my files|take a (photo|picture)|camera|scan (a|the|this|it)|add (a |the |some )?(file|files|document|documents|scan|scans)|choose (a )?files?|(open|show|list|check)\b.*\b(files|folder|documents)|what files)\b/i],
+  ['show', /\b((show|view|see|display|pull up)\b.*\b(documents?|receipts?|pdfs?|scans?|originals?|comparison|side by side|purchase order|delivery note)|(open|show) the (comparison|receipts?|pdfs?|originals?)|side by side)\b/i],
+  ['files', /\b(attach|upload|my files|take a (photo|picture)|camera|scan (a|the|this|it)|add (a |the |some )?(file|files|document|documents|scan|scans)|choose (a )?files?|(open|list|check)\b.*\b(files|folder)|what files)\b/i],
   ['import', /\b(import|load|bring in|open (the )?(purchase|delivery|po|dn|both))\b/i],
   ['elaborate', /\b(elaborate|more detail|in detail|details? (on|about)|tell me more|explain|expand|walk me through|show me the (findings|evidence|claim|review|documents))\b/i],
   ['recover', /\b(replace|replacement|recover|alternative|other supplier|reorder|re-order)\b/i],
@@ -40,6 +41,10 @@ export function kindSaid(text: string): Kind | null {
   if (/\b(delivery|note|dn)\b/i.test(text)) return 'delivery_note'
   return null
 }
+
+/** Which original to show first for "show the purchase order" / "show the delivery note". */
+export const sheetTabFor = (text: string): 'compare' | 'purchase_order' | 'delivery_note' =>
+  /\b(purchase order|po)\b/i.test(text) ? 'purchase_order' : /\b(delivery note|dn)\b/i.test(text) ? 'delivery_note' : 'compare'
 
 export const wantsCamera = (text: string) => /\b(scan|photo|picture|camera)\b/i.test(text)
 

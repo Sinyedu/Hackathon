@@ -6,7 +6,7 @@ import type { Session } from '../services/session'
 import type { Reconciliation } from '../types/reconciliation'
 import ProofSheet from './ProofSheet'
 import RecoveryPanel from './RecoveryPanel'
-import SourceColumns from './SourceColumns'
+import DocumentCompare from './docs/DocumentCompare'
 
 interface Props { session: Session; result: Reconciliation; refresh: (id: string) => Promise<void>; onError: (value: string) => void; isDock: boolean }
 
@@ -72,7 +72,7 @@ export default function Verdict({ session, result, refresh, onError, isDock }: P
         </article>
       )}
 
-      <SourceColumns result={result} onProof={setProof} />
+      <div className="verdict__compare"><DocumentCompare result={result} onProof={setProof} /></div>
 
       {isDock && session.verdict.some((row) => row.line_ids.length) && (
         <section className="counts">
