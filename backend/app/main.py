@@ -9,11 +9,21 @@ from pathlib import Path
 
 from app.api import catalog, health, reconciliations, sessions
 from app.core.config import get_settings
+from app.services.inbox import watch
+import asyncio
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    yield
+    watcher = asyncio.create_task(watch())
+    try:
+        yield
+    finally:
+        watcher.cancel()
+        try:
+            await watcher
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(title="DockProof API", lifespan=lifespan)

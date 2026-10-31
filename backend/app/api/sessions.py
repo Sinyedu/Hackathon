@@ -3,13 +3,16 @@
 import asyncio
 import hashlib
 import json
+import runpy
+import secrets
 import socket
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.api.reconciliations import _read
@@ -20,6 +23,7 @@ from app.services.extract import ExtractionError
 from app.services.match import normalize_unit
 
 router = APIRouter(prefix="/session", tags=["session"])
+ROOT = Path(__file__).resolve().parents[3]
 
 
 def _session(session_id: str) -> dict:
@@ -40,7 +44,7 @@ def create_session() -> dict:
     session = {"id": session_id, "events": [], "aliases": {}, "rejected": [],
                "counts": {}, "signatures": {}, "claims": [], "deliveries": [],
                "purchase_order": None, "delivery_note": None, "reconciliation_id": None,
-               "verdict": []}
+               "verdict": [], "generated": [], "delivery_id": None}
     store.state.sessions[session_id] = session
     return public_session(session)
 
@@ -93,9 +97,14 @@ async def upload(session_id: str, purchase_order: UploadFile | None = None,
     if not session["purchase_order"] or not session["delivery_note"]:
         _event(session, "delivery_received", {"waiting_for": "purchase_order" if not session["purchase_order"] else "delivery_note"})
         return public_session(session)
+    session["delivery_id"] = None
+    return await process_pair(session, session["purchase_order"], session["delivery_note"])
+
+
+async def process_pair(session: dict, po: pipeline.Upload, dn: pipeline.Upload) -> dict:
     _event(session, "reading")
     try:
-        rec = await pipeline.run_reconciliation(session["purchase_order"], session["delivery_note"],
+        rec = await pipeline.run_reconciliation(po, dn,
                                                 aliases=session["aliases"], rejected=session["rejected"],
                                                 require_model_review=True)
     except ExtractionError as exc:
@@ -108,7 +117,8 @@ async def upload(session_id: str, purchase_order: UploadFile | None = None,
     questions = [m for m in rec.matches if m.status == MatchStatus.NEEDS_REVIEW and m.catalog_item_id]
     for match in questions:
         _event(session, "question", {"line_id": match.source_line_id, "catalog_item_id": match.catalog_item_id})
-    _event(session, "verdict", {"reconciliation_id": rec.id, "status": rec.status})
+    _event(session, "verdict", {"reconciliation_id": rec.id, "status": rec.status,
+                                 "delivery_id": session.get("delivery_id")})
     return public_session(session)
 
 
@@ -121,6 +131,67 @@ class Answer(BaseModel):
 class CountUpdate(BaseModel):
     line_id: str
     counted: Decimal | None = Field(default=None, ge=0)
+
+
+class GenerateRequest(BaseModel):
+    persona: str
+    seed: int | None = None
+    chaos: list[str] = Field(default_factory=list)
+    ugliness: int = Field(default=0, ge=0, le=4)
+
+
+@router.post("/{session_id}/generate")
+def generate_delivery(session_id: str, request: GenerateRequest) -> dict:
+    session = _session(session_id)
+    generate = runpy.run_path(str(ROOT / "tools" / "generator.py"))["generate"]
+    try:
+        generated = generate(session_id, request.persona,
+                             request.seed if request.seed is not None else secrets.randbelow(1_000_000),
+                             request.chaos, request.ugliness)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    session["generated"].append(generated)
+    _event(session, "printed_to_dock", {"delivery_id": generated["delivery_id"]})
+    return generated
+
+
+@router.get("/{session_id}/generated/{delivery_id}/note")
+def generated_preview(session_id: str, delivery_id: str) -> FileResponse:
+    session = _session(session_id)
+    generated = next((item for item in session["generated"] if item["delivery_id"] == delivery_id), None)
+    if generated is None:
+        raise HTTPException(404, "Generated delivery not found")
+    return FileResponse(ROOT / "dock-inbox" / generated["delivery_note"], media_type="image/png")
+
+
+@router.get("/{session_id}/reveal")
+def reveal(session_id: str) -> dict:
+    session = _session(session_id)
+    delivery_id = session.get("delivery_id")
+    if not delivery_id or not any(e["type"] == "verdict" and e["data"].get("delivery_id") == delivery_id for e in session["events"]):
+        raise HTTPException(409, "Verdict is not ready")
+    path = ROOT / "dock-answers" / f"{delivery_id}.json"
+    if not path.exists():
+        raise HTTPException(404, "Answer key not found")
+    key = json.loads(path.read_text())
+    rec = store.get_reconciliation(session["reconciliation_id"])
+    if rec is None:
+        raise HTTPException(409, "Reconciliation not found")
+    comparison = []
+    for problem in key["problems"]:
+        item_id, kind, amount = problem["catalog_item_id"], problem["type"], problem["amount"]
+        row = next((row for row in session["verdict"] if row["catalog_item_id"] == item_id), None)
+        discrepancy = next((d for d in rec.discrepancies if d.catalog_item_id == item_id), None)
+        if kind == "shortage":
+            found = bool(discrepancy and discrepancy.difference < 0 and abs(discrepancy.difference) >= amount)
+        elif kind == "overstated":
+            found = bool(row and Decimal(row["note_overstated"]) >= amount)
+        elif kind == "extra":
+            found = bool(discrepancy and discrepancy.difference > 0)
+        else:
+            found = bool(discrepancy and discrepancy.difference < 0)
+        comparison.append({**problem, "found": found})
+    return {"delivery_id": delivery_id, "supplier": key["supplier"], "comparison": comparison}
 
 
 def _refresh_verdict(session: dict) -> None:
@@ -248,7 +319,7 @@ def reset(session_id: str) -> dict:
     session = _session(session_id)
     session.update({"aliases": {}, "rejected": [], "counts": {}, "signatures": {}, "claims": [],
                     "deliveries": [], "purchase_order": None, "delivery_note": None, "reconciliation_id": None,
-                    "verdict": []})
+                    "verdict": [], "generated": [], "delivery_id": None})
     _event(session, "reset")
     return public_session(session)
 

@@ -8,5 +8,9 @@
   {"id": "P007", "description": "Chicken breast fillets, 10 kg box", "unit": "box"},
   {"id": "P008", "description": "Fresh basil, bunch", "unit": "bunch"},
   {"id": "P009", "description": "Tomatoes, case 10 kg", "unit": "case"},
-  {"id": "P010", "description": "Eggs free-range, tray of 30", "unit": "tray"}
+  {"id": "P010", "description": "Eggs free-range, tray of 30", "unit": "tray"},
+  {"id": "P011", "description": "Cucumbers, case 5 kg", "unit": "case"},
+  {"id": "P012", "description": "Red Onions, case 10 kg", "unit": "case"},
+  {"id": "P013", "description": "Olive Oil Extra Virgin 1 L", "unit": "bottle"},
+  {"id": "P014", "description": "Mozzarella 125 g pack", "unit": "pack"}
 ]

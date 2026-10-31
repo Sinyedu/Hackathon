@@ -12,6 +12,8 @@ export interface Session {
   reconciliation_id: string | null
   claim_fingerprint: string | null
   deliveries: string[]
+  generated: { delivery_id: string; supplier: string; purchase_order: string; delivery_note: string; seed: number }[]
+  delivery_id: string | null
 }
 
 export interface CountVerdict {
@@ -55,3 +57,8 @@ export const updateCount = (id: string, line_id: string, counted: string | null)
   json<Session>(`/api/session/${id}/count`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ line_id, counted }) })
 export const resetSession = (id: string) => json<Session>(`/api/session/${id}/reset`, { method: 'POST' })
 export const getResult = (id: string) => json<Reconciliation>(`/api/reconciliations/${id}`)
+export const generateDelivery = (id: string, input: { persona: string; seed: number; chaos: string[]; ugliness: number }) =>
+  json<{ delivery_id: string; supplier: string; purchase_order: string; delivery_note: string; seed: number }>(`/api/session/${id}/generate`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input),
+  })
+export const revealAnswer = (id: string) => json<{ delivery_id: string; supplier: string; comparison: { type: string; catalog_item_id: string; amount: number; found: boolean }[] }>(`/api/session/${id}/reveal`)

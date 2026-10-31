@@ -29,3 +29,5 @@ __pycache__/
 
 # Uploaded scans
 uploads/
+dock-inbox/
+dock-answers/

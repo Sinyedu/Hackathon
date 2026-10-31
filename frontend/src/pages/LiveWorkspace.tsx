@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 import LiveDot from '../components/LiveDot'
+import ChaosDock from '../components/ChaosDock'
 import ProofSheet from '../components/ProofSheet'
 import ReceiptStrip from '../components/ReceiptStrip'
 import Stamp from '../components/Stamp'
-import { answerSession, approveSession, createSession, getResult, getSession, joinSession, lanIp, resetSession, updateCount, uploadSession, API } from '../services/session'
+import { answerSession, approveSession, createSession, getResult, getSession, joinSession, lanIp, resetSession, revealAnswer, updateCount, uploadSession, API } from '../services/session'
 import type { Session } from '../services/session'
 import type { Reconciliation } from '../types/reconciliation'
 
-const eventTypes = ['delivery_received', 'reading', 'extracted', 'matching', 'question', 'answered', 'count_updated', 'verdict', 'signed', 'claim_drafted', 'claim_approved', 'phone_connected', 'failed', 'reset']
+const eventTypes = ['printed_to_dock', 'delivery_received', 'reading', 'extracted', 'matching', 'question', 'answered', 'count_updated', 'verdict', 'signed', 'claim_drafted', 'claim_approved', 'phone_connected', 'failed', 'reset']
 
 function useLiveSession(isDock: boolean) {
   const [session, setSession] = useState<Session | null>(null)
@@ -124,6 +125,7 @@ function Result({ session, result, refresh, onError, isDock }: { session: Sessio
   const [busy, setBusy] = useState(false)
   const [claimOpen, setClaimOpen] = useState(false)
   const [proof, setProof] = useState<string | null>(null)
+  const [revealed, setRevealed] = useState<Awaited<ReturnType<typeof revealAnswer>> | null>(null)
   const shortage = result.discrepancies.filter(item => Number(item.difference) < 0)
   const problemCount = shortage.reduce((sum, item) => sum + Math.abs(Number(item.difference)), 0)
   const approved = result.claim?.status === 'approved'
@@ -150,6 +152,7 @@ function Result({ session, result, refresh, onError, isDock }: { session: Sessio
     })}</section>}
     <div className="evidence-table"><div className="section-label">SOURCE COMPARISON</div>{result.discrepancies.map(item => <details key={item.catalog_item_id}><summary><strong>{item.description}</strong><span className="problem-value">{item.difference} {item.unit}</span></summary><div className="evidence-detail"><span>Ordered {item.ordered_quantity} {item.unit}</span><span>Received {item.delivered_quantity} {item.unit}</span>{item.evidence.map((source, index) => <code key={index}>{source}</code>)}{result.line_items.filter(line => item.evidence.some(source => source.includes(line.id))).map(line => <button key={line.id} className="proof-link" onClick={() => setProof(line.id)}>Proof: {line.id.split('-').at(-1)}</button>)}</div></details>)}</div>
     {result.warnings.length > 0 && <p className="warning-note">{result.warnings.join(' · ')}</p>}
+    {!isDock && session.delivery_id && <div className="reveal-block"><button className="secondary-action" onClick={() => void revealAnswer(session.id).then(setRevealed).catch(cause => onError((cause as Error).message))}>Reveal answer key</button>{revealed && <div className="reveal-list"><div className="section-label">HIDDEN PROBLEMS / {revealed.supplier}</div>{revealed.comparison.map((item, index) => <div key={index}><span>{item.found ? '✓ FOUND' : '✕ MISSED'}</span><strong>{item.type} · {item.catalog_item_id} · {item.amount}</strong></div>)}</div>}</div>}
     {result.claim && <div className="claim-actions"><button className="primary-action" onClick={() => setClaimOpen(!claimOpen)}>{claimOpen ? 'Hide claim' : 'Review claim'}</button></div>}
     {claimOpen && result.claim && <section className="claim-paper"><div className="section-label">SUPPLIER CLAIM / {result.claim.status.toUpperCase()}</div><h2>Delivery discrepancy</h2><p>Documented shortage from reconciliation {result.id}.</p>{result.claim.discrepancies.map(item => <p key={item.catalog_item_id}>{item.description}: ordered {item.ordered_quantity} {item.unit}, received {item.delivered_quantity} {item.unit}, difference {item.difference} {item.unit}.</p>)}<p className="claim-amount">{claimCents === null ? 'Price unknown' : `€${(claimCents / 100).toFixed(2)} claim value`}</p><small>SHA-256 {session.claim_fingerprint?.slice(0, 12)}…{session.claim_fingerprint?.slice(-8)} · Created {new Date(result.claim.created_at).toLocaleString()}</small><small>No message has been sent to the supplier.</small>{!approved && <button className="primary-action" disabled={busy || result.status !== 'ready'} onClick={() => void approve()}>{busy ? 'Approving…' : 'Approve claim'}</button>}</section>}
     {isDock && <p className="dock-note">Updates appear on the office screen instantly.</p>}
@@ -159,13 +162,16 @@ function Result({ session, result, refresh, onError, isDock }: { session: Sessio
 
 export default function LiveWorkspace({ isDock = false }: { isDock?: boolean }) {
   const { session, result, error, setError, refresh } = useLiveSession(isDock)
+  const [chaosTarget, setChaosTarget] = useState<string | null>(null)
+  const chaosOpen = chaosTarget === (result?.id || 'none')
   const latest = session?.events.at(-1)?.type
   return <div className={`live-app ${isDock ? 'live-app--dock' : ''}`}><header className="live-header"><div className="brand-lockup"><span className="brand-mark">D<span>·</span>P</span><b>DockProof</b></div><span className="header-meta">{isDock ? 'THE DOCK' : 'THE OFFICE'} / LOCAL SESSION</span></header>
     <main className="live-main">{error && <div className="error-banner" role="alert">{error}</div>}{!session ? <p>{isDock ? 'Open the QR link from the office screen to pair this phone.' : 'Creating local session…'}</p> : <>
-      {!isDock && <div className="home-intro"><div className="section-label">DELIVERY CONTROL / LIVE</div><h1>Today at the dock.</h1><p>Documents arrive. DockProof checks them. You make the final call.</p></div>}
-      {!result && <div className="home-grid">{!isDock && <PairCard session={session} />}<UploadControl session={session} isDock={isDock} onError={setError} /></div>}
+      {!isDock && <div className="home-intro"><div className="section-label">DELIVERY CONTROL / LIVE</div><h1>Today at the dock.</h1><p>Documents arrive. DockProof checks them. You make the final call.</p><div className="home-actions"><button className="primary-action" onClick={() => setChaosTarget(chaosOpen ? null : (result?.id || 'none'))}>{chaosOpen ? 'Close Chaos Dock' : 'Chaos Dock'}</button></div></div>}
+      {chaosOpen && !isDock && <ChaosDock session={session} onError={setError} />}
+      {!result && !chaosOpen && <div className="home-grid">{!isDock && <PairCard session={session} />}<UploadControl session={session} isDock={isDock} onError={setError} /></div>}
       {latest === 'reading' && <div className="reading-status"><LiveDot active label="Reading and comparing your documents…" /></div>}
-      {result && <><Questions session={session} result={result} refresh={refresh} onError={setError} /><Result session={session} result={result} refresh={refresh} onError={setError} isDock={isDock} /></>}
+      {result && <><Questions session={session} result={result} refresh={refresh} onError={setError} /><Result key={result.id} session={session} result={result} refresh={refresh} onError={setError} isDock={isDock} /></>}
       {!isDock && <div className="workspace-footer"><LiveDot active label="Watching this session" /><button onClick={() => void resetSession(session.id).then(() => refresh(session.id))}>Reset demo</button></div>}
     </>}</main></div>
 }
