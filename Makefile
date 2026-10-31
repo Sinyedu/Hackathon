@@ -1,4 +1,4 @@
-.PHONY: backend frontend test build lint check backend-lan frontend-lan tunnel
+.PHONY: backend frontend test test-frontend build lint check backend-lan frontend-lan tunnel
 
 backend:
 	cd backend && .venv/bin/uvicorn app.main:app --reload --port 8000
@@ -9,13 +9,16 @@ frontend:
 test:
 	cd backend && .venv/bin/pytest -q
 
+test-frontend:
+	cd frontend && pnpm test
+
 build:
 	cd frontend && pnpm build
 
 lint:
 	cd frontend && pnpm lint
 
-check: test lint build
+check: test test-frontend lint build
 
 # Phone on the same Wi-Fi: open http://<laptop-ip>:5173
 backend-lan:

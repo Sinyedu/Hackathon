@@ -6,7 +6,7 @@ Runs on every push to `main` and every pull request:
 | Job | What it runs |
 |---|---|
 | Backend | `pip install -r backend/requirements.txt`, then `pytest` (Ollama is mocked; no model needed) |
-| Frontend | `pnpm install --frozen-lockfile`, `pnpm lint`, `pnpm build` (TypeScript check included) |
+| Frontend | `pnpm install --frozen-lockfile`, `pnpm lint`, `pnpm test` (Vitest), `pnpm build` (TypeScript check included) |
 
 Run the same checks locally with `make check`.
 Keep `backend/requirements.txt` and `frontend/pnpm-lock.yaml` committed and in sync: CI installs from them.
