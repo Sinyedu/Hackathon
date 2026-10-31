@@ -11,3 +11,11 @@
 .mascot-button:active {
   cursor: grabbing;
 }
+.overlay-bubble {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  right: 8px;
+  max-height: 56px;
+  pointer-events: none;
+}

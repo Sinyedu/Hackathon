@@ -1,6 +1,6 @@
 # Kiwi
 
-A local-first desktop assistant: an animated mascot in a corner of the screen with a chat panel docked below it. See [AGENTS.md](AGENTS.md) for product rules and [docs/steps](docs/steps) for the build plan. Current status: **step 1 (foundation)** — placeholder mascot, empty panel, typed IPC, packaging.
+A local-first desktop assistant: an animated mascot in a corner of the screen with a chat panel docked below it. See [AGENTS.md](AGENTS.md) for product rules and [docs/steps](docs/steps) for the build plan. Current status: **step 3 (brain)**: mascot, chat panel, fast-path commands and a local model with tool calling.
 
 ## Quickstart
 
@@ -16,6 +16,26 @@ pnpm dist      # installer for the current OS in apps/desktop/release
 
 Use: click or drag the green circle; click it or press `Ctrl/Cmd+Shift+K` to toggle the panel; `Esc` closes it; the tray icon has Show/Hide and Quit.
 
+## Models (Ollama)
+
+Fast commands (`open github`, `search electron docs`, `timer 1 minute`, `note buy milk`, `volume down`, `undo`) need no model. Anything else uses a local model through [Ollama](https://ollama.com). Defaults are in `settings.json` (`fastModel`, `planningModel`, `ollamaUrl`):
+
+| Hardware        | Suggested model        |
+| --------------- | ---------------------- |
+| under 8 GB RAM  | `qwen3:1.7b` (default) |
+| 8 to 16 GB RAM  | `qwen3:4b`             |
+| 16 GB+ or a GPU | `qwen3:8b`             |
+
+```sh
+ollama pull qwen3:1.7b
+```
+
+If Ollama is not running, the fast path still works and the model path tells you what to start.
+
+## Config files
+
+Created on first run in the app's user data folder: `apps.json` (allowed apps), `sites.json`, `commands.json` (fast-path phrases) and `settings.json`. Notes are saved to `~/KiwiSandbox/notes`; "undo" moves them to `~/KiwiSandbox/.trash`.
+
 ## Unsigned installers
 
 Installers are not code-signed. Windows SmartScreen ("Windows protected your PC" → More info → Run anyway) and macOS Gatekeeper (right-click → Open) will warn on first launch. The Linux AppImage needs `chmod +x`.
@@ -24,4 +44,5 @@ Installers are not code-signed. Windows SmartScreen ("Windows protected your PC"
 
 - Linux: the overlay is forced onto X11 (XWayland) because native Wayland ignores window positions. Click-through uses `setShape` on Linux (mouse forwarding is only supported on macOS/Windows) and is experimental.
 - Windows and macOS were not tested in step 1; only the Linux build was run.
-- Placeholder icon and mascot; real art arrives in step 2.
+- Placeholder app icon.
+- App launch commands for Windows and macOS in `apps.json` and the volume commands (PowerShell media keys, osascript) were written from documentation and not run on those systems.

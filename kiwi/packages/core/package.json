@@ -7,5 +7,9 @@
   "types": "src/index.ts",
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@kiwi/shared": "workspace:*",
+    "zod": "^4.6.7"
   }
 }

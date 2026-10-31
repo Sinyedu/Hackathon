@@ -4,7 +4,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/out/**', '**/dist/**', '**/release/**', '**/node_modules/**'] },
+  { ignores: ['**/out/**', '**/dist/**', '**/release/**', '**/coverage/**', '**/node_modules/**'] },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {
@@ -27,6 +27,10 @@ export default tseslint.config(
     rules: {
       'max-lines-per-function': ['error', { max: 70, skipBlankLines: true, skipComments: true }],
     },
+  },
+  {
+    files: ['**/*.test.ts'],
+    rules: { 'max-lines-per-function': 'off' },
   },
   {
     files: ['apps/desktop/src/renderer/**/*.{ts,tsx}'],

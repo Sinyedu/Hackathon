@@ -25,3 +25,19 @@ Channel names and payload schemas live in `packages/shared/src/ipc.ts` only. The
 ## Persistence
 
 `settings.json` in `userData`, validated by `settingsSchema` (currently the overlay position). Invalid files fall back to defaults with a console warning.
+
+## Agent (step 3)
+
+```
+user text -> Agent.run
+               |-- "undo"            -> journal inverse (no confirmation)
+               |-- router (JSON)     -> one tool call           (fast path, no model)
+               '-- model loop (<=5)  -> Ollama tool calls       (LlmClient port)
+                          each call: zod validate -> confirm if write -> execute -> journal -> receipt
+```
+
+- `packages/core` holds the agent, router, tools (`tools/*.ts`, one registry), safety policy and reducers. It only knows ports: `LlmClient`, `ConfirmationPort`, `PlatformPort`, `ActionJournal`.
+- `apps/desktop/src/main/adapters/` implements them: Ollama HTTP client, Electron platform (launcher, volume, sandbox notes, timers, clipboard), confirmation bridge.
+- The agent emits `AgentEvent`s only (`packages/shared`). Main broadcasts them to both windows; `reduceChat` builds the chat list and `mascotEventsFor` + `reduceMascot` drive the mascot.
+- Config files in `userData`: `settings.json`, `apps.json`, `sites.json`, `commands.json`. Created from defaults, validated with zod; an invalid file falls back to defaults and says so in the chat.
+- Safety: allowlisted apps only, http/https only, notes only inside `~/KiwiSandbox` (symlinks resolved, "delete" = `.trash`), write tools need Yes, tool results are fenced as untrusted data.

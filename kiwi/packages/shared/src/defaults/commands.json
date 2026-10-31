@@ -1,0 +1,195 @@
+{
+  "fillers": [
+    "hey kiwi",
+    "hi kiwi",
+    "ok kiwi",
+    "kiwi",
+    "hey",
+    "hi",
+    "hello",
+    "ok",
+    "okay",
+    "yo",
+    "so",
+    "can you",
+    "could you",
+    "would you",
+    "will you",
+    "can you please",
+    "could you please",
+    "please",
+    "pls",
+    "just",
+    "go ahead and",
+    "i want you to",
+    "i want to",
+    "i need to",
+    "i'd like to",
+    "let's",
+    "lets",
+    "now"
+  ],
+  "trailingFillers": ["please", "pls", "for me", "now", "thanks", "thank you", "right now"],
+  "numberWords": {
+    "a": 1,
+    "an": 1,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+    "fifteen": 15,
+    "twenty": 20,
+    "thirty": 30,
+    "forty five": 45,
+    "sixty": 60,
+    "half": 0.5
+  },
+  "units": {
+    "seconds": ["second", "seconds", "sec", "secs", "s"],
+    "minutes": ["minute", "minutes", "min", "mins", "m"],
+    "hours": ["hour", "hours", "hr", "hrs", "h"]
+  },
+  "commands": [
+    {
+      "id": "search-youtube",
+      "tool": "web_search",
+      "patterns": [
+        "search youtube for {text}",
+        "search youtube {text}",
+        "youtube search {text}",
+        "search for {text} on youtube",
+        "search {text} on youtube",
+        "find {text} on youtube",
+        "look up {text} on youtube"
+      ],
+      "args": { "engine": "youtube" }
+    },
+    {
+      "id": "search-web",
+      "tool": "web_search",
+      "patterns": [
+        "search for {text}",
+        "search {text}",
+        "google {text}",
+        "look up {text}",
+        "look for {text}",
+        "find {text} online",
+        "web search {text}"
+      ],
+      "args": { "engine": "web" }
+    },
+    {
+      "id": "timer",
+      "tool": "set_timer",
+      "patterns": [
+        "set a timer for {amount} {unit}",
+        "set timer for {amount} {unit}",
+        "set a {amount} {unit} timer",
+        "set {amount} {unit} timer",
+        "timer for {amount} {unit}",
+        "timer {amount} {unit}",
+        "{amount} {unit} timer",
+        "start a timer for {amount} {unit}",
+        "start a {amount} {unit} timer",
+        "remind me in {amount} {unit}",
+        "wake me in {amount} {unit}"
+      ]
+    },
+    {
+      "id": "note",
+      "tool": "write_note",
+      "patterns": [
+        "take a note {text}",
+        "take note {text}",
+        "write a note {text}",
+        "make a note {text}",
+        "note that {text}",
+        "note down {text}",
+        "note {text}",
+        "jot down {text}",
+        "remember that {text}"
+      ]
+    },
+    {
+      "id": "volume-up",
+      "tool": "set_volume",
+      "patterns": [
+        "volume up",
+        "turn the volume up",
+        "turn volume up",
+        "turn it up",
+        "louder",
+        "increase the volume",
+        "raise the volume",
+        "increase volume"
+      ],
+      "args": { "action": "up" }
+    },
+    {
+      "id": "volume-down",
+      "tool": "set_volume",
+      "patterns": [
+        "volume down",
+        "turn the volume down",
+        "turn volume down",
+        "turn it down",
+        "quieter",
+        "lower the volume",
+        "decrease the volume",
+        "decrease volume",
+        "lower volume"
+      ],
+      "args": { "action": "down" }
+    },
+    {
+      "id": "volume-mute",
+      "tool": "set_volume",
+      "patterns": [
+        "mute",
+        "volume mute",
+        "mute the volume",
+        "mute sound",
+        "mute it",
+        "unmute",
+        "unmute the sound"
+      ],
+      "args": { "action": "mute" }
+    },
+    {
+      "id": "time",
+      "tool": "get_time",
+      "patterns": [
+        "what time is it",
+        "what's the time",
+        "whats the time",
+        "what is the time",
+        "tell me the time",
+        "current time",
+        "time"
+      ]
+    },
+    {
+      "id": "open",
+      "tool": "open",
+      "patterns": [
+        "open {target}",
+        "launch {target}",
+        "start {target}",
+        "run {target}",
+        "go to {target}",
+        "visit {target}",
+        "take me to {target}",
+        "browse to {target}",
+        "pull up {target}",
+        "show me {target}",
+        "switch to {target}"
+      ]
+    }
+  ]
+}

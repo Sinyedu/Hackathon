@@ -38,3 +38,4 @@ dock-answers/
 # Kiwi build output
 kiwi/apps/desktop/out/
 kiwi/apps/desktop/release/
+kiwi/coverage/

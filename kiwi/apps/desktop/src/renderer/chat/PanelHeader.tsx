@@ -12,11 +12,22 @@ const stateText: Record<MascotState, string> = {
   error: 'Needs attention',
 };
 
-export function PanelHeader({ state, micActive }: { state: MascotState; micActive: boolean }) {
+interface PanelHeaderProps {
+  state: MascotState;
+  micActive: boolean;
+  onUndo?: () => void;
+}
+
+export function PanelHeader({ state, micActive, onUndo }: PanelHeaderProps) {
   return (
     <header className="panel-header">
       <h1>Kiwi</h1>
       <span className="panel-state">{stateText[state]}</span>
+      {onUndo && (
+        <button className="btn btn--ghost btn--small" type="button" onClick={onUndo}>
+          Undo
+        </button>
+      )}
       <span
         className="mic-dot"
         data-active={micActive}

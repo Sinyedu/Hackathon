@@ -1,11 +1,13 @@
-import { StrictMode, useEffect, useState } from 'react';
+import { StrictMode, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { ChatMessage } from '@kiwi/shared';
 import { ChatPanel } from '../chat/ChatPanel';
+import { useChat } from '../chat/use-chat';
+import { useMascotState } from '../mascot/use-mascot-state';
 import '../styles/tokens.css';
 
 function Panel() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const chat = useChat();
+  const { state } = useMascotState();
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent): void => {
@@ -15,10 +17,18 @@ function Panel() {
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, []);
 
-  const send = (text: string): void =>
-    setMessages((current) => [...current, { id: crypto.randomUUID(), role: 'user', text }]);
-
-  return <ChatPanel state="idle" messages={messages} onSend={send} />;
+  return (
+    <ChatPanel
+      state={state}
+      messages={chat.messages}
+      busy={chat.busy}
+      confirming={chat.pending !== null}
+      onSend={chat.send}
+      onConfirm={chat.confirm}
+      onUndo={chat.undo}
+      onCancel={chat.cancel}
+    />
+  );
 }
 
 const root = document.getElementById('root');

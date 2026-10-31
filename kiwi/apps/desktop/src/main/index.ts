@@ -1,4 +1,5 @@
 import { app, globalShortcut } from 'electron';
+import { createAgentHost } from './agent-host';
 import { registerIpc } from './ipc';
 import { createMascotController } from './mascot-controller';
 import { installGlobalHardening } from './security';
@@ -22,12 +23,13 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 function start(): void {
-  const settings = loadSettings();
+  const { value: settings, problem } = loadSettings();
+  if (problem) console.warn(problem);
   const overlay = createOverlayWindow(settings);
   const panel = createPanelWindow();
   const controller = createMascotController(overlay, panel, settings);
 
-  registerIpc(controller);
+  registerIpc(controller, createAgentHost(settings));
   createTray(controller);
 
   if (!globalShortcut.register(TOGGLE_PANEL_SHORTCUT, () => controller.togglePanel())) {
