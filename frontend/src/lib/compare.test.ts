@@ -17,7 +17,8 @@ describe('buildRows', () => {
     expect(row.note).toBe('Short 6 case')
     expect(row.po?.id).toBe('l1')
     expect(row.dn?.id).toBe('l2')
-    expect(row.shared.has('case')).toBe(true)
+    // "Tomatoes, case 5 kg" vs "Tomato Box 5KG": only the stemmed word is shared ("5KG" is one token, unlike "5", "kg").
+    expect([...row.shared]).toEqual(['tomato'])
   })
 
   it('shows an over-delivery as extra', () => {

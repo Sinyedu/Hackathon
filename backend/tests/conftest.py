@@ -1,6 +1,13 @@
 import pytest
 
+from app.services import speech
 from app.services.store import state
+
+
+@pytest.fixture(autouse=True)
+def no_speech_warmup(monkeypatch):
+    """App startup warms Whisper in a background thread; tests must not download or load that model."""
+    monkeypatch.setattr(speech, "warm", lambda: None)
 
 
 @pytest.fixture
