@@ -24,7 +24,9 @@ FUZZY_MIN_SCORE = 92.0  # confident enough to skip the model
 FUZZY_MIN_MARGIN = 8.0  # ...and clearly better than the runner-up
 MODEL_CANDIDATES = 3
 
-_WORD_SYNONYMS = {"box": "case", "carton": "case", "ctn": "case", "cs": "case"}
+_WORD_SYNONYMS = {"box": "case", "carton": "case", "ctn": "case", "cs": "case",
+                  "tomater": "tomatoes", "agurker": "cucumbers", "rødløg": "red onions",
+                  "kasse": "case", "stk": "pcs"}
 _UNIT_SYNONYMS = {"box": "case", "boxes": "case", "cases": "case", "carton": "case", "ctn": "case"}
 
 SYSTEM_PROMPT = (
@@ -49,7 +51,7 @@ def _stem(word: str) -> str:
 def normalize(text: str) -> str:
     """Lowercase, split '5kg' into '5 kg', drop punctuation, singularise, unify case/box."""
     text = re.sub(r"(\d)([a-zA-Z])", r"\1 \2", text.lower())
-    words = re.findall(r"[a-z0-9]+", text)
+    words = re.findall(r"[a-z0-9æøå]+", text)
     return " ".join(sorted(_stem(w) for w in words))
 
 

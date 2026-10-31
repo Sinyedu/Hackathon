@@ -3,7 +3,7 @@
 
 export type DocumentKind = 'purchase_order' | 'delivery_note' | 'invoice'
 export type MatchStatus = 'matched' | 'needs_review' | 'unmatched'
-export type MatchMethod = 'exact' | 'fuzzy' | 'model' | 'manual'
+export type MatchMethod = 'exact' | 'fuzzy' | 'model' | 'manual' | 'learned'
 export type ClaimStatus = 'draft' | 'approved'
 
 export interface CatalogItem {

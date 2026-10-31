@@ -28,6 +28,7 @@ class MatchMethod(StrEnum):
     FUZZY = "fuzzy"
     MODEL = "model"
     MANUAL = "manual"
+    LEARNED = "learned"
 
 
 class ClaimStatus(StrEnum):

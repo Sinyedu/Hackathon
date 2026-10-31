@@ -1,7 +1,7 @@
 """HTTP handlers: validation and orchestration only. Routes follow AGENTS.md API contract."""
 
 from fastapi import APIRouter, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 
 from app.schemas.domain import Corrections, DocumentKind, Reconciliation
 from app.services import claims, corrections as correction_service, pipeline, store
@@ -47,15 +47,15 @@ def get_reconciliation(reconciliation_id: str) -> Reconciliation:
 
 
 @router.get("/{reconciliation_id}/documents/{document_id}/file")
-def get_document_file(reconciliation_id: str, document_id: str) -> FileResponse:
+def get_document_file(reconciliation_id: str, document_id: str) -> Response:
     """The original scan, so the UI can show extracted lines beside it for confirmation."""
     rec = _get_or_404(reconciliation_id)
     if document_id not in {d.id for d in rec.documents}:  # also blocks path traversal
         raise HTTPException(404, "Document not found")
-    path = pipeline.upload_path(reconciliation_id, document_id)
-    if not path.is_file():
+    content = store.state.uploads.get((reconciliation_id, document_id))
+    if content is None:
         raise HTTPException(404, "Document file missing")
-    return FileResponse(path, media_type=pipeline.media_type(path.read_bytes()))
+    return Response(content, media_type=pipeline.media_type(content))
 
 
 @router.post("/{reconciliation_id}/approve", response_model=Reconciliation)

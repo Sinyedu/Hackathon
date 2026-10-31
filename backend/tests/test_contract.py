@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from app.core.db import init_db
+from app.services import store
 from app.main import app
 
 client = TestClient(app)
@@ -17,9 +17,9 @@ def test_unknown_reconciliation_404(db) -> None:
     assert client.get("/api/reconciliations/abc").status_code == 404
 
 
-def test_init_db(db) -> None:
-    init_db()
-    assert db.exists()
+def test_process_local_store(db) -> None:
+    assert store.state.reconciliations == {}
+    assert store.state.sessions == {}
 
 
 def test_catalog_lists_known_products() -> None:

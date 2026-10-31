@@ -1,24 +1,26 @@
 import pytest
 
-from app.core.config import get_settings
+from app.services.store import state
 
 
 @pytest.fixture
-def db(tmp_path, monkeypatch):
-    """Isolated SQLite file per test."""
-    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'test.db'}")
-    get_settings.cache_clear()
-    yield tmp_path / "test.db"
-    get_settings.cache_clear()
+def db():
+    """Clear process-local state between tests."""
+    state.reconciliations.clear()
+    state.audit_log.clear()
+    state.sessions.clear()
+    state.uploads.clear()
+    yield state
+    state.reconciliations.clear()
+    state.audit_log.clear()
+    state.sessions.clear()
+    state.uploads.clear()
 
 
 @pytest.fixture
-def client(db, tmp_path, monkeypatch):
+def client(db):
     from fastapi.testclient import TestClient
 
     from app.main import app
 
-    monkeypatch.setenv("UPLOADS_DIR", str(tmp_path / "uploads"))
-    get_settings.cache_clear()
     yield TestClient(app)
-    get_settings.cache_clear()
