@@ -29,3 +29,6 @@ __pycache__/
 
 # Uploaded scans
 uploads/
+
+# Vercel CLI link
+.vercel/

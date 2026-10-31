@@ -1,5 +1,7 @@
 # DockProof
 
+[![CI](https://github.com/Hizashii/Hackathon/actions/workflows/ci.yml/badge.svg)](https://github.com/Hizashii/Hackathon/actions/workflows/ci.yml)
+
 AI-powered delivery reconciliation. DockProof compares a purchase order, delivery note and invoice,
 uses a small local open-weight model (Qwen3 1.7B via Ollama) to match differently named products,
 and uses deterministic code for quantities, prices, discrepancies and claims. Claims require human approval.
@@ -64,7 +66,7 @@ The backend never downloads the model or runs inference at startup.
 | Frontend build + typecheck | `cd frontend && pnpm build` |
 | Frontend lint | `cd frontend && pnpm lint` |
 
-See `docs/DEPLOY.md` for phone access and the Vercel + tunnel deployment.
+See `docs/DEPLOY.md` for phone access and the Vercel + tunnel deployment, and `docs/CI-CD.md` for the GitHub Actions pipeline.
 
 ## URLs
 
