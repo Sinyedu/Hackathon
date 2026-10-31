@@ -1,33 +1,41 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { EVENT_LINES, intentOf, pickFiles, stripWake } from '../lib/agentIntent'
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
+import { EVENT_LINES, intentOf, kindSaid, sectionFor, stripWake } from '../lib/agentIntent'
 import { briefToMarkdown, type Brief } from '../lib/brief'
 import { errorMessage } from '../lib/errors'
 import { canSpeak, speak, stopSpeaking } from '../lib/speak'
 import { askQuestion, findRecovery, transcribeAudio } from '../services/api'
-import { approveSession, importFile, listFiles, type LocalFile, type Session } from '../services/session'
+import { approveSession, type LocalFile, type Session } from '../services/session'
 import type { Document, Reconciliation } from '../types/reconciliation'
 import type { OrbPhase } from '../components/agent/ParticleOrb'
 import { parseWake } from '../lib/wake'
+import { useAgentFiles, type PickMode } from './useAgentFiles'
 import { useHandsFree } from './useHandsFree'
 import { useRecorder } from './useRecorder'
 
 export interface AgentLine { id: number; who: 'you' | 'agent'; text: string; sources?: Document[]; model?: boolean; error?: boolean }
 
-interface Args { open: boolean; session: Session | null; result: Reconciliation | null; brief: Brief; refresh: (id: string) => Promise<void> }
+interface Args {
+  inputs: Record<PickMode, RefObject<HTMLInputElement | null>>
+  session: Session | null
+  result: Reconciliation | null
+  brief: Brief
+  refresh: (id: string) => Promise<void>
+  onGenerate: () => void
+}
 
-export function useAgent({ open, session, result, brief, refresh }: Args) {
+export function useAgent({ inputs, session, result, brief, refresh, onGenerate }: Args) {
   const [log, setLog] = useState<AgentLine[]>([])
   const [caption, setCaption] = useState({ text: '', at: 0 })
   const [speaking, setSpeaking] = useState(false)
   const [busy, setBusy] = useState(false)
   const [muted, setMuted] = useState(!canSpeak)
   const [confirming, setConfirming] = useState(false)
-  const [files, setFiles] = useState<LocalFile[] | null>(null)
+  // Which briefing window the agent just talked about; the panel opens it.
+  const [focus, setFocus] = useState<{ title: string; at: number } | null>(null)
   const pulse = useRef(0)
   const nextId = useRef(1)
   const seen = useRef(0)
   const awaitingVerdict = useRef(false)
-  const greeted = useRef(false)
 
   const add = (line: Omit<AgentLine, 'id'>) => setLog((current) => [...current.slice(-30), { ...line, id: nextId.current++ }])
 
@@ -61,26 +69,17 @@ export function useAgent({ open, session, result, brief, refresh }: Args) {
     say(`${best.supplier_name} can cover it: ${best.packages_needed} times ${best.pack_size} ${best.pack_unit} for ${best.total_cost} ${best.currency}, ${lead}. It is a suggestion only; nothing is ordered. The other options are under the shortage on the page.`)
   }
 
-  const openFiles = async (sessionId: string) => {
-    const listing = await listFiles(sessionId)
-    setFiles(listing.files)
-    if (!listing.files.length) say(`Your files folder, ${listing.folder}, is empty. Put a scan or PDF there and ask me again.`)
-    else say(`I see ${listing.files.length} file${listing.files.length === 1 ? '' : 's'} in ${listing.folder}: ${listing.files.map((f) => f.name).join(', ')}. Tell me which to import, or say import both.`)
-    return listing.files
-  }
+  const docs = useAgentFiles({ session, inputs, say, note: (text) => add({ who: 'agent', text }) })
+  const importOne = (file: LocalFile) => void run(() => docs.importNamed(file.name))
+  const assignKind = (kind: 'purchase_order' | 'delivery_note') => void run(() => docs.assignPending(kind))
+  const uploadPicked = (picked: File[]) => void run(() => docs.uploadPicked(picked))
 
-  const importNamed = async (sessionId: string, text: string) => {
-    const picked = pickFiles(text, files ?? await listFiles(sessionId).then((l) => { setFiles(l.files); return l.files }))
-    if (picked === 'ambiguous') return say('More than one file fits that. Say the file name, or tap it below.')
-    if (!picked.length) return say('I could not find that file. Say open my files to hear what is there.')
-    for (const file of picked) {
-      if (!file.kind) return say(`I cannot tell if ${file.name} is the purchase order or the delivery note. Rename it with order or delivery in the name.`)
-      add({ who: 'agent', text: `Importing ${file.name} as the ${file.kind.replace('_', ' ')}.` })
-      await importFile(sessionId, file.name, file.kind)
-    }
+  const elaborate = (text: string) => {
+    const section = brief.sections.find((s) => s.title === sectionFor(text)) ?? brief.sections[0]
+    if (!section) return say('There is nothing to go into yet. Add the documents first.')
+    setFocus({ title: section.title, at: Date.now() })
+    say(`${section.title}. ${section.rows.map((r) => `${r.label}: ${r.value}${r.note ? `, ${r.note}` : ''}.`).join(' ')}`)
   }
-
-  const importOne = (file: LocalFile) => session && void run(() => importNamed(session.id, file.name))
 
   const run = async (action: () => Promise<unknown>) => {
     setBusy(true)
@@ -91,10 +90,15 @@ export function useAgent({ open, session, result, brief, refresh }: Args) {
     const text = stripWake(raw)
     if (!text || busy) return
     add({ who: 'you', text: raw.trim() })
+    const answeredKind = docs.pending && kindSaid(text)
+    if (answeredKind) return run(() => docs.assignPending(answeredKind))
     const intent = intentOf(text)
     if (intent === 'brief') return say(brief.spoken)
     if (intent === 'export') { exportBrief(); return say('I downloaded the briefing as a Markdown file.') }
-    if ((intent === 'files' || intent === 'import') && session) return run(() => intent === 'files' ? openFiles(session.id) : importNamed(session.id, text))
+    if (intent === 'files') return run(() => docs.attach(text))
+    if (intent === 'generate') { onGenerate(); return say('Opening test deliveries. Print one and I will read it as soon as it lands.') }
+    if (intent === 'elaborate') return elaborate(text)
+    if (intent === 'import') return run(() => docs.importNamed(text))
     if (!result) return say('I have nothing to look at yet. Add the documents first.')
     if (intent === 'findings') return say(brief.sections[0].rows.map((r) => `${r.label}: ${r.value}${r.note ? `, ${r.note}` : ''}.`).join(' '))
     if (intent === 'approve') {
@@ -133,7 +137,7 @@ export function useAgent({ open, session, result, brief, refresh }: Args) {
       })
       .catch((e: unknown) => { setBusy(false); say(`I could not hear that: ${errorMessage(e)}`, { error: true }) })
   }
-  const hands = useHandsFree(open && mic.supported, busy || speaking || mic.recording, hearHandsFree)
+  const hands = useHandsFree(mic.supported, busy || speaking || mic.recording, hearHandsFree)
 
   const confirmApproval = async () => {
     if (!session) return
@@ -149,19 +153,20 @@ export function useAgent({ open, session, result, brief, refresh }: Args) {
     }
   }
 
-  // Greet with the current state on open; go quiet on close.
+  // Greet once the session is known; go quiet when the agent page is left.
+  const greeted = useRef(false)
   useEffect(() => {
-    if (!open) { stopSpeaking(); greeted.current = false; return }
-    if (greeted.current) return
+    if (!session || greeted.current) return
     greeted.current = true
-    seen.current = session?.events.length ?? 0
+    seen.current = session.events.length
     say(brief.spoken)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
+  }, [session])
+  useEffect(() => stopSpeaking, [])
 
   // Narrate live session events while open.
   useEffect(() => {
-    if (!open || !session) return
+    if (!session || !greeted.current) return
     const fresh = session.events.slice(seen.current)
     seen.current = session.events.length
     const latest = fresh.at(-1)?.type
@@ -170,16 +175,16 @@ export function useAgent({ open, session, result, brief, refresh }: Args) {
     if (latest === 'verdict') awaitingVerdict.current = true
     else if (latest === 'delivery_received' && waitingFor) say(`Got it. Now I need the ${waitingFor.replace('_', ' ')}.`)
     else if (EVENT_LINES[latest]) say(EVENT_LINES[latest])
-  }, [open, session, say])
+  }, [session, say])
 
   useEffect(() => {
-    if (open && awaitingVerdict.current && result) {
+    if (awaitingVerdict.current && result) {
       awaitingVerdict.current = false
       say(brief.spoken)
     }
-  }, [open, result, brief.spoken, say])
+  }, [result, brief.spoken, say])
 
   const phase: OrbPhase = mic.recording || hands.capturing ? 'listening' : busy ? 'thinking' : speaking ? 'speaking' : 'idle'
   const toggleMute = () => { if (!muted) { stopSpeaking(); setSpeaking(false) } setMuted(!muted) }
-  return { log, caption, phase, pulse, mic: { ...mic, error: mic.error ?? hands.error }, muted, toggleMute, busy, confirming, setConfirming, confirmApproval, handle, exportBrief, files, importOne }
+  return { log, caption, phase, pulse, mic: { ...mic, error: mic.error ?? hands.error }, muted, toggleMute, busy, confirming, setConfirming, confirmApproval, handle, exportBrief, docs, importOne, assignKind, uploadPicked, focus }
 }

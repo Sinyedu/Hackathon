@@ -1,14 +1,16 @@
 import type { LocalFile } from '../services/session'
 
-export type Intent = 'brief' | 'findings' | 'recover' | 'export' | 'approve' | 'files' | 'import' | 'ask'
+export type Intent = 'brief' | 'findings' | 'elaborate' | 'recover' | 'export' | 'approve' | 'generate' | 'files' | 'import' | 'ask'
 
 // Commands are matched locally so actions never depend on the model's wording.
 // Anything that is not a command goes to the local model as a question.
 const RULES: [Intent, RegExp][] = [
   ['approve', /\b(approve|sign (it )?off|accept the claim)\b/i],
   ['export', /\b(export|download|save (the )?(brief|briefing|report|summary))\b/i],
+  ['generate', /\b(test deliver\w*|(generate|print|make|create) (me )?(a |the |some )?(delivery|deliveries|test|files?|documents?))\b/i],
+  ['files', /\b(attach|upload|my files|take a (photo|picture)|camera|scan (a|the|this|it)|add (a |the |some )?(file|files|document|documents|scan|scans)|choose (a )?files?|(open|show|list|check)\b.*\b(files|folder|documents)|what files)\b/i],
   ['import', /\b(import|load|bring in|open (the )?(purchase|delivery|po|dn|both))\b/i],
-  ['files', /\b(my files|(open|show|list|check)\b.*\b(files|folder|documents)|what files)\b/i],
+  ['elaborate', /\b(elaborate|more detail|in detail|details? (on|about)|tell me more|explain|expand|walk me through|show me the (findings|evidence|claim|review|documents))\b/i],
   ['recover', /\b(replace|replacement|recover|alternative|other supplier|reorder|re-order)\b/i],
   ['brief', /\b(summary|summari[sz]e|status|what'?s happening|what is happening|brief|update me|catch me up)\b/i],
   ['findings', /\b(missing|short|shortage|discrepanc\w*|problem|wrong)\b/i],
@@ -19,6 +21,38 @@ export const stripWake = (text: string) => text.replace(/^\s*(hey|hi|ok|okay)[\s
 
 export function intentOf(text: string): Intent {
   return RULES.find(([, pattern]) => pattern.test(text))?.[0] ?? 'ask'
+}
+
+export type Kind = 'purchase_order' | 'delivery_note'
+
+/** Same naming rule as the backend's files service. */
+export function guessKind(name: string): Kind | null {
+  const lowered = name.toLowerCase()
+  if (/purchase|order|(^|[^a-z])po([^a-z]|$)/.test(lowered)) return 'purchase_order'
+  if (/delivery|dispatch|packing|(^|[^a-z])dn([^a-z]|$)/.test(lowered)) return 'delivery_note'
+  return null
+}
+
+/** "it's the delivery note" style answers to "which document is this?". */
+export function kindSaid(text: string): Kind | null {
+  if (/\b(purchase|order|po)\b/i.test(text)) return 'purchase_order'
+  if (/\b(delivery|note|dn)\b/i.test(text)) return 'delivery_note'
+  return null
+}
+
+export const wantsCamera = (text: string) => /\b(scan|photo|picture|camera)\b/i.test(text)
+
+/** The briefing window a request is about; null when it names none. */
+export function sectionFor(text: string): string | null {
+  const rules: [RegExp, string][] = [
+    [/evidence|source|proof/i, 'Evidence from the scans'],
+    [/review|check|match/i, 'Needs review'],
+    [/claim/i, 'Claim'],
+    [/document|file/i, 'Documents'],
+    [/next|what do i do/i, 'Next step'],
+    [/finding|missing|short|problem|discrepanc/i, 'Findings'],
+  ]
+  return rules.find(([pattern]) => pattern.test(text))?.[1] ?? null
 }
 
 const words = (text: string) => text.toLowerCase().replace(/\.[a-z0-9]+$/, '').split(/[^a-z0-9]+/).filter((w) => w.length > 1)
@@ -42,8 +76,8 @@ export function pickFiles(text: string, files: LocalFile[]): LocalFile[] | 'ambi
 /** One plain sentence per live session event, spoken while the agent is open. */
 export const EVENT_LINES: Record<string, string> = {
   printed_to_dock: 'A new delivery was printed to the dock.',
-  delivery_received: 'Documents received. Reading them now.',
-  reading: 'Reading the documents.',
+  delivery_received: 'Alright boss, I have it.',
+  reading: 'Alright boss, I will process it. Reading the documents now.',
   extracted: 'I have pulled the lines out of the scans.',
   matching: 'Matching products between the order and the delivery note.',
   question: 'I need you to confirm a product match.',

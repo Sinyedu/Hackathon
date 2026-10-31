@@ -1,7 +1,7 @@
 import { ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import { claimValue } from '../lib/brief'
-import { answerSession, approveSession, revealAnswer, updateCount } from '../services/session'
+import { answerSession, approveSession, updateCount } from '../services/session'
 import type { Session } from '../services/session'
 import type { Reconciliation } from '../types/reconciliation'
 import ProofSheet from './ProofSheet'
@@ -39,7 +39,6 @@ export default function Verdict({ session, result, refresh, onError, isDock }: P
   const [busy, setBusy] = useState(false)
   const [claimOpen, setClaimOpen] = useState(false)
   const [proof, setProof] = useState<string | null>(null)
-  const [revealed, setRevealed] = useState<Awaited<ReturnType<typeof revealAnswer>> | null>(null)
   const shortages = result.discrepancies.filter((item) => item.difference.startsWith('-'))
   const approved = result.claim?.status === 'approved'
   const value = claimValue(session)
@@ -116,12 +115,6 @@ export default function Verdict({ session, result, refresh, onError, isDock }: P
         </details>
       )}
 
-      {!isDock && session.delivery_id && (
-        <div className="reveal">
-          <button className="link-btn" onClick={() => void revealAnswer(session.id).then(setRevealed).catch((cause) => onError((cause as Error).message))}>Reveal the test delivery's answer key</button>
-          {revealed && <ul>{revealed.comparison.map((item, index) => <li key={index} className={item.found ? 'found' : 'missed'}><b>{item.found ? 'Found' : 'Missed'}</b> {item.type} · {item.catalog_item_id} · {item.amount}</li>)}</ul>}
-        </div>
-      )}
       {proofLine && <ProofSheet result={result} line={proofLine} onClose={() => setProof(null)} />}
     </section>
   )

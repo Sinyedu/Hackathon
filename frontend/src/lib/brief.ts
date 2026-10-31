@@ -13,6 +13,9 @@ const KIND = { purchase_order: 'Purchase order', delivery_note: 'Delivery note',
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 const magnitude = (difference: string) => difference.replace(/^[-+]/, '')
 
+/** Evidence arrives as "<document id>: <scanned text>"; show the document's role instead of its id. */
+const readable = (source: string) => source.replace(/^.*?(purchase_order|delivery_note|invoice):\s*/, (_, kind: keyof typeof KIND) => `${KIND[kind]}: `)
+
 export function claimValue(session: Session): string | null {
   const rows = session.verdict.filter((row) => Number(row.shortage) > 0 || Number(row.note_overstated) > 0)
   if (!rows.length || rows.some((row) => row.claim_cents === null)) return null
@@ -27,7 +30,7 @@ export function buildBrief(session: Session | null, result: Reconciliation | nul
       headline: reading ? 'Reading your documents' : 'Waiting for documents',
       spoken: reading
         ? 'I am reading your documents now. I will tell you what I find.'
-        : 'I am ready. Add a purchase order and a delivery note, or scan them from the dock phone, and I will check them for you.',
+        : 'I am ready. Scan or upload a purchase order and a delivery note, and I will check them for you.',
       sections: [],
     }
   }
@@ -56,7 +59,7 @@ export function buildBrief(session: Session | null, result: Reconciliation | nul
     ...reviewLines.map((m) => ({ label: lineById.get(m.source_line_id)?.description ?? 'Unreadable line', value: m.status === 'unmatched' ? 'No match' : 'Check match' })),
     ...result.warnings.map((w) => ({ label: 'Note', value: w })),
   ]
-  const evidence: BriefRow[] = result.discrepancies.flatMap((d) => d.evidence.map((source) => ({ label: d.description, value: source })))
+  const evidence: BriefRow[] = result.discrepancies.flatMap((d) => d.evidence.map((source) => ({ label: d.description, value: readable(source) })))
   const value = claimValue(session)
   const claim: BriefRow[] = result.claim
     ? [
