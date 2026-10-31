@@ -116,3 +116,7 @@
 .wake-dot--suspended, .wake-dot--starting { background: #e0a100; }
 .wake-dot--denied { background: var(--tomato); }
 @media (max-width: 640px) { .wake-toggle { padding: 0 10px; } }
+.agent__heard { margin: 4px 0 0; font-size: 13px; color: var(--ink-3); text-align: center; }
+.agent__status { max-width: 100%; height: auto; min-height: 28px; padding-block: 4px; text-align: left; }
+.agent__status--speaking { background: color-mix(in srgb, var(--cobalt) 14%, var(--desk)); }
+.agent__status--listening { background: color-mix(in srgb, #0aa2d8 18%, var(--desk)); }

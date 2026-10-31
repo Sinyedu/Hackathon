@@ -1,6 +1,9 @@
 """Voice + question endpoints: validation and orchestration only."""
 
+import json
+
 from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
@@ -14,6 +17,7 @@ MAX_AUDIO_BYTES = 5 * 1024 * 1024
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=500)
+    history: list[assistant.Turn] = Field(default_factory=list, max_length=20)  # earlier turns, oldest first
     focus: str | None = Field(default=None, max_length=100)  # card the user has open
 
 
@@ -46,10 +50,30 @@ async def ask(reconciliation_id: str, body: AskRequest) -> AskResponse:
         raise HTTPException(422, "Question is empty")
     plans = recovery.get_plans_for_all(reconciliation_id)
     try:
-        reply, sources, focus, grounded = await assistant.answer(rec, plans, question, body.focus)
+        reply, sources, focus, grounded = await assistant.answer(rec, plans, question, body.focus, body.history)
     except ollama.OllamaError as exc:
         raise HTTPException(503, "The local AI model is not available right now") from exc
     return AskResponse(answer=reply, sources=sources, focus=focus, grounded=grounded)
+
+
+@router.post("/reconciliations/{reconciliation_id}/ask/stream")
+async def ask_stream(reconciliation_id: str, body: AskRequest) -> StreamingResponse:
+    """NDJSON: one JSON event per line (meta, sentence, fallback, done, or error)."""
+    rec = store.get_reconciliation(reconciliation_id)
+    if rec is None:
+        raise HTTPException(404, "Reconciliation not found")
+    if not body.question.strip():
+        raise HTTPException(422, "Question is empty")
+    plans = recovery.get_plans_for_all(reconciliation_id)
+
+    async def events():
+        try:
+            async for event in assistant.answer_stream(rec, plans, body.question.strip(), body.focus, body.history):
+                yield json.dumps(event) + "\n"
+        except ollama.OllamaError:
+            yield json.dumps({"type": "error", "detail": "The local AI model is not available right now"}) + "\n"
+
+    return StreamingResponse(events(), media_type="application/x-ndjson")
 
 
 @router.post("/voice/transcribe", response_model=TranscriptResponse)

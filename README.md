@@ -104,7 +104,9 @@ New endpoints: `GET /api/suppliers`, `POST /api/reconciliations/{id}/discrepanci
 - The first voice request needs the Whisper model; check the backend log if it is still downloading.
 - Spoken answers use the browser's built-in voice. Some Linux setups have none installed (Chrome then stays silent; on Debian/Ubuntu try `sudo apt install speech-dispatcher espeak-ng`). The agent keeps working without a voice; the text is shown.
 
-Endpoints: `POST /api/voice/transcribe`, `POST /api/reconciliations/{id}/ask`, `GET /api/reconciliations/{id}/cards`.
+- **Memory and speed**: the conversation is saved per session in the browser (it survives a reload) and the last 8 turns are sent to the model so follow-ups like "and how long does it take?" work. Answers stream sentence by sentence and are spoken as they arrive; each sentence is number-checked before it is shown. The header status says *Waiting*, *Listening to you*, *Thinking* or *Speaking (not listening)*, and shows what was heard.
+
+Endpoints: `POST /api/voice/transcribe`, `POST /api/reconciliations/{id}/ask`, `POST /api/reconciliations/{id}/ask/stream`, `GET /api/reconciliations/{id}/cards`.
 
 ## URLs
 

@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { EVENT_LINES, intentOf, kindSaid, sectionFor, stripWake } from '../lib/agentIntent'
 import { briefToMarkdown, type Brief } from '../lib/brief'
 import { errorMessage } from '../lib/errors'
-import { canSpeak, speak, stopSpeaking } from '../lib/speak'
-import { askQuestion, findRecovery, transcribeAudio } from '../services/api'
+import { canSpeak, speak, speakQueued, stopSpeaking } from '../lib/speak'
+import { askStream, findRecovery, transcribeAudio, type Turn } from '../services/api'
 import { approveSession, resolveLine, type LocalFile, type Session } from '../services/session'
 import type { Document, Reconciliation } from '../types/reconciliation'
 import type { OrbPhase } from '../components/agent/ParticleOrb'
@@ -35,10 +35,19 @@ interface Args {
 export interface Offer { supplier: string; summary: string; url: string; isSearch: boolean }
 
 export function useAgent({ inputs, session, result, brief, refresh, onGenerate, active, onWake, listening }: Args) {
+  const sessionId = session?.id ?? null
   const [log, setLog] = useState<AgentLine[]>([])
+  // The conversation survives a reload: it is stored per session and also sent to the model as context.
+  const [restored, setRestored] = useState<string | null>(null)
+  if (sessionId && restored !== sessionId) {
+    setRestored(sessionId)
+    const saved = loadLog(sessionId)
+    if (saved.length) setLog(saved)
+  }
   const [caption, setCaption] = useState({ text: '', at: 0 })
   const [speaking, setSpeaking] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [heard, setHeard] = useState('')
   const [muted, setMuted] = useState(!canSpeak)
   const [confirming, setConfirming] = useState(false)
   const [offer, setOffer] = useState<Offer | null>(null)
@@ -46,6 +55,10 @@ export function useAgent({ inputs, session, result, brief, refresh, onGenerate, 
   const [focus, setFocus] = useState<{ title: string; at: number } | null>(null)
   const pulse = useRef(0)
   const nextId = useRef(1)
+  useEffect(() => {
+    nextId.current = Math.max(nextId.current, ...log.map((l) => l.id + 1))
+    if (sessionId && restored === sessionId) saveLog(sessionId, log)
+  }, [log, sessionId, restored])
   const seen = useRef(0)
   const awaitingVerdict = useRef(false)
 
@@ -139,15 +152,47 @@ export function useAgent({ inputs, session, result, brief, refresh, onGenerate, 
     }
     return run(async () => {
       if (intent === 'recover') return recover(result)
-      const answer = await askQuestion(result.id, text)
-      say(answer.answer, { sources: answer.sources, model: true })
+      await ask(result.id, text)
     })
+  }
+
+  // The model's reply arrives sentence by sentence; each is shown and spoken as soon as it has been checked.
+  const ask = async (id: string, text: string) => {
+    const history: Turn[] = log.filter((l) => !l.error).slice(-8).map((l) => ({ role: l.who === 'you' ? 'user' : 'assistant', content: l.text.slice(0, 800) }))
+    const lineId = nextId.current++
+    let shown = ''
+    let sources: Document[] = []
+    let pending = 0
+    let finished = false
+    const update = (extra: Partial<AgentLine> = {}) => setLog((current) => {
+      const line: AgentLine = { id: lineId, who: 'agent', text: shown, sources, model: true, ...extra }
+      return current.some((l) => l.id === lineId) ? current.map((l) => (l.id === lineId ? line : l)) : [...current.slice(-30), line]
+    })
+    const settle = () => { if (finished && pending === 0) { setSpeaking(false); setCaption((c) => ({ ...c, at: c.text.length })) } }
+    const add1 = (sentence: string) => {
+      shown = shown ? `${shown} ${sentence}` : sentence
+      update()
+      setCaption({ text: shown, at: shown.length })
+      if (muted) return
+      pending++
+      speakQueued(sentence, () => { pending--; settle() }, () => setSpeaking(true))
+    }
+    stopSpeaking()
+    await askStream(id, text, history, (event) => {
+      if (event.type === 'meta') sources = event.sources
+      else if (event.type === 'sentence' || event.type === 'fallback') add1(event.text)
+      else if (event.type === 'error') throw new Error(event.detail)
+      else if (event.type === 'done') { finished = true; settle() }
+    })
+    finished = true
+    settle()
+    if (!shown) say('The assistant gave no answer. Please try again.', { error: true })
   }
 
   const mic = useRecorder((audio) => {
     setBusy(true)
     transcribeAudio(audio)
-      .then((heard) => { setBusy(false); return heard ? handle(heard) : say('I did not catch that. Try again.') })
+      .then((heard) => { setBusy(false); setHeard(heard); return heard ? handle(heard) : say('I did not catch that. Try again.') })
       .catch((e: unknown) => { setBusy(false); say(`I could not hear that: ${errorMessage(e)}`, { error: true }) })
   })
 
@@ -159,6 +204,7 @@ export function useAgent({ inputs, session, result, brief, refresh, onGenerate, 
     transcribeAudio(audio)
       .then((heard) => {
         setBusy(false)
+        setHeard(heard)
         const rest = parseWake(heard)
         if (rest === null) return Date.now() < followUpUntil.current ? handle(heard) : undefined
         onWake()
@@ -216,13 +262,26 @@ export function useAgent({ inputs, session, result, brief, refresh, onGenerate, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result])
 
-  const phase: OrbPhase = mic.recording || hands.capturing ? 'listening' : busy ? 'thinking' : speaking ? 'speaking' : 'idle'
+  const phase: OrbPhase = speaking ? 'speaking' : mic.recording || hands.capturing ? 'listening' : busy ? 'thinking' : 'idle'
   const toggleMute = () => { if (!muted) { stopSpeaking(); setSpeaking(false) } setMuted(!muted) }
-  return { log, caption, phase, pulse, mic: { ...mic, error: mic.error ?? micNote(hands.state) }, listenState: hands.state, touring: walk.active, skipTour: walk.stop, muted, toggleMute, busy, confirming, setConfirming, confirmApproval, handle, exportBrief, docs, importOne, assignKind, uploadPicked, focus, offer, resolve }
+  return { log, caption, phase, pulse, mic: { ...mic, error: mic.error ?? micNote(hands.state) }, listenState: hands.state, heard, touring: walk.active, skipTour: walk.stop, muted, toggleMute, busy, confirming, setConfirming, confirmApproval, handle, exportBrief, docs, importOne, assignKind, uploadPicked, focus, offer, resolve }
 }
 
 function micNote(state: ListenState): string | null {
   if (state === 'denied') return 'The microphone is blocked. Allow it in the browser address bar, or type instead.'
   if (state === 'unsupported') return 'Hands-free needs HTTPS or localhost. You can still type.'
   return null
+}
+
+const KEY = (id: string) => `dockproof.chat.${id}`
+
+function loadLog(id: string): AgentLine[] {
+  try {
+    const raw: unknown = JSON.parse(localStorage.getItem(KEY(id)) ?? '[]')
+    return Array.isArray(raw) ? (raw as AgentLine[]).filter((l) => typeof l.text === 'string' && (l.who === 'you' || l.who === 'agent')).slice(-30) : []
+  } catch { return [] }
+}
+
+function saveLog(id: string, log: AgentLine[]) {
+  try { localStorage.setItem(KEY(id), JSON.stringify(log.slice(-30))) } catch { /* history just will not survive a reload */ }
 }

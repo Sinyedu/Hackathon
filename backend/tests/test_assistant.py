@@ -199,3 +199,86 @@ def test_assistant_uses_its_own_model_and_falls_back(client, monkeypatch) -> Non
     monkeypatch.setattr(ollama, "chat", chat)
     res = client.post(f"/api/reconciliations/{rid}/ask", json={"question": "what is missing?"})
     assert res.status_code == 200 and used == ["qwen3:4b-instruct-2507-q4_K_M", None]
+
+
+def capture_all(monkeypatch, reply="Tomatoes are short by 6 cases."):
+    seen: dict = {}
+
+    async def chat(messages, **kwargs):
+        seen["messages"] = messages
+        return reply
+    monkeypatch.setattr(ollama, "chat", chat)
+    return seen
+
+
+def stream_of(monkeypatch, pieces):
+    async def chat_stream(messages, **kwargs):
+        for piece in pieces:
+            yield piece
+    monkeypatch.setattr(ollama, "chat_stream", chat_stream)
+
+
+def events(client, rid, question="what is missing?", **extra):
+    res = client.post(f"/api/reconciliations/{rid}/ask/stream", json={"question": question, **extra})
+    assert res.status_code == 200
+    return [json.loads(line) for line in res.text.splitlines() if line]
+
+
+def test_history_is_sent_as_earlier_turns(client, monkeypatch) -> None:
+    rid = make_rec(client, monkeypatch)
+    seen = capture_all(monkeypatch)
+    history = [{"role": "user", "content": "what is missing?"}, {"role": "assistant", "content": "Tomatoes are short."}]
+    client.post(f"/api/reconciliations/{rid}/ask", json={"question": "and how many?", "history": history})
+    roles = [m["role"] for m in seen["messages"]]
+    assert roles == ["system", "user", "assistant", "user"]
+    assert seen["messages"][1]["content"] == "what is missing?" and "and how many?" in seen["messages"][3]["content"]
+
+
+def test_history_is_validated_and_bounded(client, monkeypatch) -> None:
+    rid = make_rec(client, monkeypatch)
+    capture_all(monkeypatch)
+    url = f"/api/reconciliations/{rid}/ask"
+    assert client.post(url, json={"question": "q", "history": [{"role": "system", "content": "x"}]}).status_code == 422
+    assert client.post(url, json={"question": "q", "history": [{"role": "user", "content": "x" * 801}]}).status_code == 422
+    seen = capture_all(monkeypatch)
+    many = [{"role": "user" if i % 2 == 0 else "assistant", "content": f"turn {i}"} for i in range(20)]
+    client.post(url, json={"question": "q", "history": many})
+    assert len(seen["messages"]) == 1 + assistant.MAX_HISTORY + 1  # system + last 8 turns + the question
+
+
+def test_numbers_from_earlier_user_turns_are_allowed(client, monkeypatch) -> None:
+    rid = make_rec(client, monkeypatch)
+    capture_all(monkeypatch, "Yes, 99 would be too many.")
+    history = [{"role": "user", "content": "is 99 cases plausible?"}]
+    body = client.post(f"/api/reconciliations/{rid}/ask", json={"question": "so?", "history": history}).json()
+    assert body["grounded"] is True
+
+
+def test_stream_delivers_validated_sentences(client, monkeypatch) -> None:
+    rid = make_rec(client, monkeypatch)
+    stream_of(monkeypatch, ["Tomatoes are short ", "by 6 cases. ", "You ordered 24", " and 18 arrived."])
+    ev = events(client, rid)
+    assert ev[0]["type"] == "meta" and [d["kind"] for d in ev[0]["sources"]] == ["purchase_order", "delivery_note"]
+    assert [e["text"] for e in ev if e["type"] == "sentence"] == ["Tomatoes are short by 6 cases.", "You ordered 24 and 18 arrived."]
+    assert ev[-1] == {"type": "done", "grounded": True}
+
+
+def test_stream_stops_at_an_invented_number(client, monkeypatch) -> None:
+    rid = make_rec(client, monkeypatch)
+    stream_of(monkeypatch, ["Tomatoes are short by 6 cases. ", "You also lost 77 sacks. ", "Everything else is fine."])
+    ev = events(client, rid)
+    kinds = [e["type"] for e in ev]
+    assert kinds == ["meta", "sentence", "fallback", "done"]  # the first sentence was fine; nothing after the bad one
+    assert "77" not in json.dumps(ev) and "short by 6 case" in ev[2]["text"] and ev[-1]["grounded"] is False
+
+
+def test_stream_reports_model_outage_and_unknown_reconciliation(client, monkeypatch) -> None:
+    rid = make_rec(client, monkeypatch)
+
+    async def down(messages, **kwargs):
+        raise ollama.OllamaError("down")
+        yield ""  # pragma: no cover - makes this an async generator
+    monkeypatch.setattr(ollama, "chat_stream", down)
+    ev = events(client, rid)
+    assert ev[-1]["type"] == "error" and "not available" in ev[-1]["detail"]
+    assert client.post("/api/reconciliations/nope/ask/stream", json={"question": "hi"}).status_code == 404

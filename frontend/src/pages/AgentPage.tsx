@@ -13,7 +13,12 @@ import type { Brief } from '../lib/brief'
 import type { Session } from '../services/session'
 import type { Reconciliation } from '../types/reconciliation'
 
-const STATUS = { idle: 'Ready', listening: 'Listening', thinking: 'Working', speaking: 'Speaking' } as const
+const STATUS = {
+  idle: 'Ready',
+  listening: 'Listening to you… I answer after 3 seconds of silence',
+  thinking: 'Thinking…',
+  speaking: 'Speaking. I am not listening right now',
+} as const
 const PROMPTS = ['Catch me up', 'What is missing?', 'Elaborate', 'Find a replacement', 'Export the briefing']
 
 interface Props {
@@ -48,7 +53,7 @@ export default function AgentPage({ agent, fileInput, cameraInput, session, resu
       onDragLeave={(event) => { if (event.currentTarget === event.target) setDragging(false) }} onDrop={drop}>
       <div className="agent__voice">
         <div className="agent__meta">
-          <span className={`agent__status agent__status--${phase}`}><i aria-hidden /> {STATUS[phase]}</span>
+          <span className={`agent__status agent__status--${phase}`}><i aria-hidden /> {phase === 'idle' && agent.listenState === 'listening' ? 'Waiting. Say “Hey agent”' : STATUS[phase]}</span>
           {canSpeak && (
             <button className="icon-btn" onClick={agent.toggleMute} aria-pressed={agent.muted} aria-label={agent.muted ? 'Turn voice on' : 'Mute voice'}>
               {agent.muted ? <VolumeX size={18} aria-hidden /> : <Volume2 size={18} aria-hidden />}
@@ -108,6 +113,7 @@ export default function AgentPage({ agent, fileInput, cameraInput, session, resu
             <button type="submit" className="icon-btn icon-btn--accent" disabled={!text.trim() || agent.busy} aria-label="Send"><ArrowUp size={18} aria-hidden /></button>
           </form>
         </div>
+        {agent.heard && phase !== 'listening' && <p className="agent__heard">I heard: “{agent.heard}”</p>}
         {mic.error && <p className="agent__error" role="alert">{mic.error}</p>}
         {docs.serverFiles && docs.serverFiles.length > 0 && (
           <div className="agent__files" aria-label="Files folder">

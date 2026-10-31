@@ -1,5 +1,5 @@
 import type { HealthResponse } from '../types/health'
-import type { CatalogItem, Corrections, Reconciliation } from '../types/reconciliation'
+import type { CatalogItem, Corrections, Document, Reconciliation } from '../types/reconciliation'
 import type { AgentCard, AskResponse } from '../types/assistant'
 import type { Priority, RecoveryPlan, ReplacementOrder } from '../types/recovery'
 
@@ -118,12 +118,41 @@ export function getCards(reconciliationId: string): Promise<AgentCard[]> {
   return request<AgentCard[]>(`/api/reconciliations/${encodeURIComponent(reconciliationId)}/cards`)
 }
 
-export function askQuestion(reconciliationId: string, question: string, focus?: string | null): Promise<AskResponse> {
+export interface Turn { role: 'user' | 'assistant'; content: string }
+
+export function askQuestion(reconciliationId: string, question: string, focus?: string | null, history: Turn[] = []): Promise<AskResponse> {
   return request<AskResponse>(`/api/reconciliations/${encodeURIComponent(reconciliationId)}/ask`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question, focus: focus ?? null }),
+    body: JSON.stringify({ question, focus: focus ?? null, history }),
   })
+}
+
+export type AskEvent =
+  | { type: 'meta'; focus: string | null; sources: Document[] }
+  | { type: 'sentence' | 'fallback'; text: string }
+  | { type: 'done'; grounded: boolean }
+  | { type: 'error'; detail: string }
+
+/** Answer sentence by sentence (NDJSON) so the agent can start speaking before the model has finished. */
+export async function askStream(reconciliationId: string, question: string, history: Turn[], onEvent: (event: AskEvent) => void, signal?: AbortSignal): Promise<void> {
+  const response = await fetch(`${API_URL}/api/reconciliations/${encodeURIComponent(reconciliationId)}/ask/stream`, {
+    method: 'POST', signal,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question, history }),
+  })
+  if (!response.ok || !response.body) throw new ApiError(response.status, `Request failed with status ${response.status}`)
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n')
+    buffer = lines.pop() ?? ''
+    for (const line of lines) if (line.trim()) onEvent(JSON.parse(line) as AskEvent)
+  }
 }
 
 /** Local Whisper speech-to-text. Returns the transcript so the user can see what was heard. */

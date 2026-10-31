@@ -1,4 +1,4 @@
-"""Compare local models on the voice assistant: PYTHONPATH=. python scripts/eval_assistant.py [model ...]
+"""Compare local models on the voice assistant: PYTHONPATH=. python scripts/eval_assistant.py [model[+think] ...]
 
 Runs against the live backend demo data. For each question it checks (a) required facts appear,
 (b) no number outside the data is invented, (c) no forbidden claim. Each question is asked REPEATS
@@ -16,28 +16,36 @@ from app.schemas.recovery import RecoveryPlan
 from app.services import assistant, ollama
 
 API = "http://localhost:8000"
-REPEATS = 2
+REPEATS = 1
 # (question, focus, [regexes that must all match], [regexes that must not match])
+REC = "Which supplier do you recommend and why?"
+H_SUP = [{"role": "user", "content": REC}, {"role": "assistant", "content": "FarmDirect: 3 times 10 kg for 540.00 DKK, in 2 days. It is the cheapest complete option."}]
+H_MISS = [{"role": "user", "content": "What is missing?"}, {"role": "assistant", "content": "Tomatoes, case 5 kg: ordered 24 case, delivered 18 case, short by 6 case."}]
+H_DN = [{"role": "user", "content": "What is in the delivery note?"}, {"role": "assistant", "content": "Tomatoes 18 box, Potatoes 10 sack, Olive oil 6 tin, Mozzarella 8 block."}]
+# (question, focus, history, [must match], [must not match])
 CASES = [
-    ("What is missing from this delivery?", None, [r"\b6\b|six", r"tomato"], [r"potato.*short"]),
-    ("What is in the delivery note?", None, [r"\b18\b", r"potato", r"\b10\b", r"mozzarella", r"\b8\b"], []),
-    ("What does the purchase order say?", None, [r"\b24\b", r"tomato", r"olive"], []),
-    ("How many sacks of potatoes arrived?", None, [r"\b10\b"], [r"\b(11|12|9)\b"]),
-    ("Which supplier do you recommend and why?", None, [r"FarmDirect", r"540"], [r"GreenSupply.*recommend"]),
-    ("How much will the replacement cost?", None, [r"540"], []),
-    ("Is the claim approved?", None, [r"draft|not (yet )?approved|not been approved"], [r"is approved"]),
-    ("Explain this one.", "claim", [r"claim", r"draft"], []),
-    ("Explain this.", "disc:P001", [r"\b6\b", r"\b24\b", r"\b18\b"], []),
-    ("What is the weather in Copenhagen?", None, [r"cannot|can't|not|no "], [r"\b\d+\s*(degrees|°)"]),
-    # Conversational phrasing, as real speech comes out of Whisper
-    ("so what's the deal with the tomatoes", None, [r"\b6\b|six", r"short|missing|fewer"], []),
-    ("are we good or is there a problem with this delivery", None, [r"problem|short|discrepan|not", r"\b6\b|six"], [r"no (problem|discrepanc)"]),
-    ("how much more do I need to order", None, [r"\b6\b|six"], []),
-    ("what's the cheapest way to fix it", None, [r"FarmDirect", r"540"], []),
-    ("how fast can I get a replacement", None, [r"same day|0 day|2 day|\b2\b|GreenSupply|FarmDirect"], []),
-    ("did the olive oil arrive", None, [r"yes|arrived|delivered|\b6\b", r"olive"], [r"short|missing"]),
-    ("what's the total price of the claim", None, [r"cannot|can't|not|no "], []),
-    ("tell me about the delivery note please", None, [r"\b18\b", r"mozzarella"], []),
+    ("What is missing from this delivery?", None, [], [r"\b6\b|six", r"tomato"], [r"potato.*short"]),
+    ("What is in the delivery note?", None, [], [r"\b18\b", r"potato", r"\b10\b", r"mozzarella", r"\b8\b"], []),
+    ("How many sacks of potatoes arrived?", None, [], [r"\b10\b"], [r"\b(11|12|9)\b"]),
+    (REC, None, [], [r"FarmDirect", r"540"], [r"GreenSupply.*recommend"]),
+    ("Is the claim approved?", None, [], [r"draft|not (yet )?approved|not been approved"], [r"is approved"]),
+    ("What is the weather in Copenhagen?", None, [], [r"cannot|can't|not|no "], [r"\b\d+\s*(degrees|°)"]),
+    # Conversational / needs inference
+    ("so what's the deal with the tomatoes", None, [], [r"\b6\b|six", r"short|missing|fewer"], []),
+    ("Should I be worried about this delivery?", None, [], [r"\b6\b|six|short|tomato"], [r"no (need|reason)|not worried|nothing to worry"]),
+    ("Why does the screen say I'm short?", None, [], [r"\b24\b", r"\b18\b"], []),
+    ("I think they forgot some tomatoes, right?", None, [], [r"yes|right|correct|short|\b6\b|six"], [r"no, "]),
+    ("Did the supplier ship the full order?", None, [], [r"no|not|short|\b6\b|six"], [r"\byes\b"]),
+    ("Are the potatoes okay?", None, [], [r"\b10\b|match|fine|ok|no (issue|problem|discrepanc)"], [r"potatoes?[^.]*short"]),
+    ("What should I do next?", None, [], [r"replac|claim|review|approve|supplier"], []),
+    ("What can you do?", None, [], [r"replac|claim|explain|walk|document|scan"], []),
+    ("Which is the cheapest and which is the fastest supplier?", None, [], [r"FarmDirect", r"GreenSupply"], []),
+    # Follow-ups that only make sense with the conversation so far
+    ("and how long does it take?", None, H_SUP, [r"\b2\b|two"], []),
+    ("ok and why that one?", None, H_SUP, [r"cheap|lowest|cost|price|540"], []),
+    ("and the potatoes?", None, H_MISS, [r"\b10\b"], [r"potatoes?[^.]*short"]),
+    ("what about the purchase order?", None, H_DN, [r"\b24\b"], []),
+    ("how much is that again?", None, H_SUP, [r"540"], []),
 ]
 
 
@@ -53,29 +61,28 @@ async def main(models: list[str]) -> None:
     plan = RecoveryPlan.model_validate(get(f"/api/reconciliations/{rid}/discrepancies/P001/recover", "POST"))
     cards = assistant.build_cards(rec, [plan])
     print(f"cards: {[c.id for c in cards]}")
-    for model in models:
+    for spec in models:
+        model, _, flag = spec.partition("+")
+        think = flag == "think"
         ok = bad_numbers = total = 0
         failures: list[str] = []
         started = time.time()
-        for question, focus, must, must_not in CASES:
-            target = assistant.route_card(question, cards, rec, focus)
-            card = next((c for c in cards if c.id == target), None)
-            data = json.dumps(assistant.build_context(rec, [plan], card), ensure_ascii=False)
-            user = f"DATA:\n{data}\n\nQUESTION: {json.dumps(question)}"
+        history_cases = [c for c in CASES if c[2]]
+        for question, focus, history, must, must_not in CASES:
+            turns = [assistant.Turn(**h) for h in history]
+            ctx = assistant.prepare(rec, [plan], question, focus, turns)
             for _ in range(REPEATS):
-                reply = assistant.clean_answer(await ollama.chat(
-                    [{"role": "system", "content": assistant.SYSTEM_PROMPT}, {"role": "user", "content": user}],
-                    timeout=180, model=model))
+                reply = assistant.clean_answer(await ollama.chat(ctx.messages, timeout=240, model=model, think=think))
                 total += 1
-                grounded = assistant.numbers_grounded(reply, data, question)
+                grounded = assistant.numbers_grounded(reply, ctx.allowed)
                 good = grounded and all(re.search(p, reply, re.I | re.S) for p in must) \
                     and not any(re.search(p, reply, re.I | re.S) for p in must_not)
                 ok += good
                 bad_numbers += not grounded
                 if not good:
-                    failures.append(f"  [{'INVENTED NUMBER' if not grounded else 'fact'}] {question!r} -> {reply[:160]!r}")
-        print(f"\n{model}: {ok}/{total} correct, {bad_numbers} replies with invented numbers, {(time.time()-started)/total:.1f}s/answer")
-        print("\n".join(failures[:8]))
+                    failures.append(f"  [{'INVENTED NUMBER' if not grounded else 'wrong/missing'}] {question!r}{' (follow-up)' if history else ''} -> {reply[:170]!r}")
+        print(f"\n{spec}: {ok}/{total} correct, {bad_numbers} invented-number replies, {(time.time()-started)/total:.1f}s/answer")
+        print("\n".join(failures[:10]))
 
 
 if __name__ == "__main__":

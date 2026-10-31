@@ -37,3 +37,17 @@ export function speak(text: string, hooks: SpeakHooks = {}): void {
 export function stopSpeaking(): void {
   if (canSpeak) window.speechSynthesis.cancel()
 }
+
+/** Adds to what is being said instead of replacing it (used for streamed answers). */
+export function speakQueued(text: string, onEnd: () => void, onStart?: () => void): void {
+  if (!canSpeak) return onEnd()
+  const utterance = new SpeechSynthesisUtterance(text)
+  utterance.rate = 1.04
+  let finished = false
+  const finish = () => { if (!finished) { finished = true; window.clearTimeout(watchdog); onEnd() } }
+  const watchdog = window.setTimeout(finish, 6000 + text.length * 90)
+  utterance.onstart = () => onStart?.()
+  utterance.onend = finish
+  utterance.onerror = finish
+  window.speechSynthesis.speak(utterance)
+}

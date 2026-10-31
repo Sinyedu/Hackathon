@@ -26,15 +26,20 @@ NAMES = {
 }
 
 
+# A free font (DejaVu Sans, redistributable; see fonts/LICENSE-DejaVu.txt) ships with the repo so fixtures
+# render the same on Windows, macOS and any Linux distribution, and the euro sign always exists.
+FONT_DIR = Path(__file__).resolve().parent / "fonts"
+
+
+def _font_file(bold: bool) -> str:
+    path = FONT_DIR / ("DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf")
+    if not path.exists():
+        raise RuntimeError(f"Bundled font missing: {path}")
+    return str(path)
+
+
 def _font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
-    names = (["/usr/share/fonts/google-noto/NotoSans-Bold.ttf", "LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf"]
-             if bold else ["/usr/share/fonts/google-noto/NotoSans-Regular.ttf", "LiberationSans-Regular.ttf", "DejaVuSans.ttf"])
-    for name in names:
-        try:
-            return ImageFont.truetype(name, size)
-        except OSError:
-            continue
-    raise RuntimeError("A readable TrueType font is required to generate OCR fixtures")
+    return ImageFont.truetype(_font_file(bold), size)
 
 
 def _render(title: str, code: str, rows: list[tuple[str, int, str, str | None]],
@@ -67,18 +72,6 @@ def _render(title: str, code: str, rows: list[tuple[str, int, str, str | None]],
         image = ImageEnhance.Contrast(image).enhance(max(.86, 1 - ugliness * .025))
         image = image.filter(ImageFilter.GaussianBlur(radius=min(.5, ugliness * .1)))
     return image
-
-
-def _font_file(bold: bool) -> str:
-    """Path of a TTF that draws the euro sign; the standard PDF fonts cannot."""
-    names = (["/usr/share/fonts/google-noto/NotoSans-Bold.ttf", "/usr/share/fonts/liberation-sans-fonts/LiberationSans-Bold.ttf",
-              "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans-Bold.ttf"] if bold else
-             ["/usr/share/fonts/google-noto/NotoSans-Regular.ttf", "/usr/share/fonts/liberation-sans-fonts/LiberationSans-Regular.ttf",
-              "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf"])
-    for name in names:
-        if Path(name).exists():
-            return name
-    raise RuntimeError("A TrueType font with the euro sign is required to generate PDF fixtures")
 
 
 def _write_pdf(path: Path, title: str, code: str, rows: list[tuple[str, int, str, str | None]]) -> None:
