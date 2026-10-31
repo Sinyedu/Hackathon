@@ -9,8 +9,8 @@ Small businesses, restaurants, and warehouses manually compare purchase orders, 
 ## The solution
 DockProof turns document uploads into a completed operational workflow:
 
-1. **Upload** a text-based purchase order and delivery note; an invoice is optional for the hackathon MVP.
-2. **Extract** line items and retain source snippets and page references.
+1. **Scan** a purchase order and a delivery note with a phone camera (or upload an image, screenshot or PDF from a laptop); an invoice or emailed receipt is optional for the hackathon MVP.
+2. **Extract** line items with a local OCR engine, show them next to the scanned image for user confirmation, and retain source snippets and page references.
 3. **Match** products using deterministic normalization and fuzzy matching first, then a small local open-weight model for ambiguous descriptions.
 4. **Reconcile** quantities and units with deterministic, validated calculations.
 5. **Create** a persisted discrepancy case and draft supplier claim with supporting evidence.
@@ -30,13 +30,14 @@ Supplier product names are inconsistent. A strict string comparison cannot relia
 - **Frontend:** React, Vite, TypeScript, pnpm, native `fetch`.
 - **Backend:** Python, FastAPI, Pydantic.
 - **Storage:** SQLite.
-- **PDF extraction:** PyMuPDF for text-based PDFs.
+- **Scan reading:** local OCR (RapidOCR) for photos and screenshots; PyMuPDF for text-based PDFs. Numbers come from OCR text, never from the model.
+- **Devices:** responsive web app; phone camera via native file capture on the local network.
 - **Matching:** normalization, RapidFuzz, and Ollama with **Qwen3 1.7B** (small open-weight model, Apache 2.0 model-family license; check the specific model distribution before redistribution).
 - **Execution:** locally on a developer laptop, without paid AI APIs or complex infrastructure.
 
 ## Scope for a four-hour hackathon
 ### Must work
-- Upload a purchase order and delivery note.
+- Scan or upload a purchase order and delivery note (phone or laptop).
 - Extract or load validated line items from those documents.
 - Use the local AI model to match at least one ambiguous product description.
 - Identify a genuine quantity mismatch using deterministic calculations.
@@ -45,10 +46,10 @@ Supplier product names are inconsistent. A strict string comparison cannot relia
 - Demonstrate the workflow repeatedly with synthetic fixtures.
 
 ### Only if time remains
-Invoice comparison, scanned-document OCR, email sending, external supplier integrations, ERP connections, complex authentication, or multi-user deployment.
+Invoice comparison, email sending, external supplier integrations, ERP connections, complex authentication, or multi-user deployment.
 
 ## Live demo (60–90 seconds)
-1. Upload two synthetic documents with inconsistent product descriptions.
+1. Scan two synthetic documents with a phone (or upload them) with inconsistent product descriptions.
 2. Watch DockProof match equivalent products and show the supporting source lines.
 3. See the shortage calculated and a draft claim generated automatically.
 4. Approve the claim and refresh the dashboard to prove that the approved state was persisted.
@@ -64,7 +65,7 @@ Invoice comparison, scanned-document OCR, email sending, external supplier integ
 - Demo data is synthetic and reproducible.
 
 ## Potential after the hackathon
-Add invoice reconciliation, OCR, accounting/POS integrations, supplier-specific catalogs, claim delivery and status tracking, multi-location receiving, and measurable recovery of shortages and overcharges.
+Add invoice reconciliation, handwriting and low-quality scan support, accounting/POS integrations, supplier-specific catalogs, claim delivery and status tracking, multi-location receiving, and measurable recovery of shortages and overcharges.
 
 ## Development guidance
 See [`AGENTS.md`](AGENTS.md) for shared agent instructions and [`CLAUDE.md`](CLAUDE.md) for Claude Code-specific behavior. Both prioritize the smallest reliable end-to-end workflow over architectural complexity.

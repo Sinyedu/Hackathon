@@ -4,13 +4,14 @@ AI-powered delivery reconciliation. DockProof compares a purchase order, deliver
 uses a small local open-weight model (Qwen3 1.7B via Ollama) to match differently named products,
 and uses deterministic code for quantities, prices, discrepancies and claims. Claims require human approval.
 
-> Status: project scaffold only. Business features are not implemented yet.
+> Status: scaffold plus working OCR extraction (`services/extract.py`) and AI product matching (`services/match.py`). Upload API, reconciliation, claims and UI are still stubs; see `docs/MAP.md`.
 > See `AGENTS.md`, `CLAUDE.md` and `DESCRIPTION.md` for scope and rules.
 
 ## Stack
 
 - Frontend: React + TypeScript + Vite + Tailwind CSS v4, pnpm, native `fetch`
 - Backend: Python 3.11+ / FastAPI / Pydantic / SQLite
+- Scan reading: RapidOCR (ONNX, installed via pip) for photos/screenshots; PyMuPDF for text PDFs
 - AI: `qwen3:1.7b` (Apache 2.0) through Ollama, called with `httpx`
 
 ## Structure
@@ -58,6 +59,8 @@ The backend never downloads the model or runs inference at startup.
 | Task | Command |
 |---|---|
 | Backend tests | `cd backend && pytest` |
+| Model accuracy check (needs Ollama) | `cd backend && PYTHONPATH=. python scripts/eval_matching.py` |
+| OCR spike on an image | `cd backend && python scripts/ocr_spike.py IMAGE` |
 | Frontend build + typecheck | `cd frontend && pnpm build` |
 | Frontend lint | `cd frontend && pnpm lint` |
 

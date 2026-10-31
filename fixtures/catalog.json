@@ -1,0 +1,12 @@
+[
+  {"id": "P001", "description": "Tomatoes, case 5 kg", "unit": "case"},
+  {"id": "P002", "description": "Potatoes, sack 10 kg", "unit": "sack"},
+  {"id": "P003", "description": "Olive oil extra virgin, 5 L tin", "unit": "tin"},
+  {"id": "P004", "description": "Mozzarella, block 2 kg", "unit": "block"},
+  {"id": "P005", "description": "Spaghetti, carton 12 x 500 g", "unit": "carton"},
+  {"id": "P006", "description": "Mineral water still, 24 x 0.5 L tray", "unit": "tray"},
+  {"id": "P007", "description": "Chicken breast fillets, 10 kg box", "unit": "box"},
+  {"id": "P008", "description": "Fresh basil, bunch", "unit": "bunch"},
+  {"id": "P009", "description": "Tomatoes, case 10 kg", "unit": "case"},
+  {"id": "P010", "description": "Eggs free-range, tray of 30", "unit": "tray"}
+]

@@ -59,7 +59,7 @@ Assignments are suggestions, not permissions to overwrite work.
 Run relevant checks where available:
 - Backend: `pytest` and import/startup smoke checks.
 - Frontend: `pnpm build` and existing lint/test scripts.
-- Workflow: upload fixture → match → discrepancy → draft claim → approval → persisted status.
+- Workflow: scan/upload fixture → OCR → match → discrepancy → draft claim → approval → persisted status.
 
 If a command cannot run, state exactly why. Do not claim tests passed without executing them.
 
@@ -75,6 +75,6 @@ If the deadline is near, prioritize in this order:
 2. Persisted claim and explicit approval.
 3. Correct AI candidate matching and manual-review fallback.
 4. Clear evidence UI and repeatable demo.
-5. Invoice support, OCR, email, animations, and integrations only if everything above works.
+5. Invoice support, email, animations, and integrations only if everything above works. (Scan/OCR input is core, not optional; keep a labelled fallback if OCR fails.)
 
 The winning moment is a real, validated mismatch that becomes a persisted, reviewable business action. Build toward that moment.
