@@ -1,3 +1,4 @@
+import pytest
 from helpers import FIXTURES, model_says_correct
 
 
@@ -134,3 +135,20 @@ def test_two_untitled_scans_are_not_guessed(client) -> None:
     sid = client.post("/api/session").json()["id"]
     res = client.post(f"/api/session/{sid}/upload", files=[("documents", ("a.png", blank.getvalue(), "image/png"))])
     assert res.status_code == 422 and "could not tell" in res.json()["detail"]
+
+
+SAMPLES = FIXTURES / "samples"
+PAIRS = [("purchase_order.pdf", "delivery_note.pdf"), ("IMG_0101.jpg", "IMG_0102.jpg"), ("IMG_0102.jpg", "IMG_0101.jpg"),
+         ("IMG_0103_upside_down.jpg", "IMG_0104_worn_paper.jpg"), ("scan_sideways_no_tag.png", "IMG_0104_worn_paper.jpg"),
+         ("scanned_purchase_order.pdf", "scanned_delivery_note.pdf"), ("IMG_0101.jpg", "scanned_delivery_note.pdf")]
+
+
+@pytest.mark.parametrize(("first", "second"), PAIRS)
+def test_phone_and_scanner_samples_reconcile(client, monkeypatch, first, second) -> None:
+    """Sideways, upside-down, tilted, blurry and image-only PDF inputs all end in the same 6-case tomato shortage."""
+    model_says_correct(monkeypatch)
+    sid = client.post("/api/session").json()["id"]
+    files = [("documents", (name, (SAMPLES / name).read_bytes(), "application/octet-stream")) for name in (first, second)]
+    state = client.post(f"/api/session/{sid}/upload", files=files).json()
+    tomatoes = next(row for row in state["verdict"] if row["catalog_item_id"] == "P001")
+    assert (tomatoes["ordered"], tomatoes["received"], tomatoes["shortage"]) == ("24", "18", "6")

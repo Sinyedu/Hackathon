@@ -16,7 +16,7 @@ from typing import Any
 
 import pymupdf
 import numpy as np
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 from app.schemas.domain import DocumentKind, LineItem
 
@@ -144,14 +144,40 @@ def _items(rows: list[tuple[Row, int | None]], document_id: str) -> list[LineIte
 
 def _read_image(content: bytes) -> Image.Image:
     try:
-        return Image.open(io.BytesIO(content))
+        # Phones store portrait shots sideways and add an orientation tag; honour it or OCR sees rotated text.
+        return ImageOps.exif_transpose(Image.open(io.BytesIO(content)))
     except (UnidentifiedImageError, OSError) as exc:
         raise ExtractionError("File is neither a readable image nor a PDF") from exc
 
 
+def _rows(image: Image.Image) -> list[Row]:
+    return [row for row in map(parse_cells, group_rows(ocr_cells(image))) if row]
+
+
+HEADERS = {"QTY", "PRICE", "UNIT", "UNIT PRICE", "PRODUCT", "DESCRIPTION", "TOTAL", "ITEM"}
+
+
+def _product_rows(rows: list[Row]) -> int:
+    """Rows that look like a real product line: a word-like description, not a column header or a price."""
+    return sum(1 for r in rows if re.match(r"[^\W\d_]{3}", r.description) and r.description.strip().upper() not in HEADERS)
+
+
+def _upright(image: Image.Image) -> tuple[Image.Image, list[Row]]:
+    """Reads the image the way up it is. If that gives fewer than two real product lines (a sideways or
+    upside-down page without an orientation tag reads as junk), tries the other turns and keeps the best."""
+    best_image, best_rows = image, _rows(image)
+    if _product_rows(best_rows) >= 2:
+        return best_image, best_rows
+    for angle in (180, 90, 270):
+        turned = image.rotate(angle, expand=True)
+        rows = _rows(turned)
+        if _product_rows(rows) > _product_rows(best_rows):
+            best_image, best_rows = turned, rows
+    return best_image, best_rows
+
+
 def _from_image(image: Image.Image, page: int | None) -> list[tuple[Row, int | None]]:
-    parsed = (parse_cells(r) for r in group_rows(ocr_cells(image)))
-    return [(row, page) for row in parsed if row]
+    return [(row, page) for row in _upright(image)[1]]
 
 
 def _from_pdf(content: bytes) -> list[tuple[Row, int | None]]:
@@ -215,4 +241,9 @@ def detect_kind(content: bytes) -> DocumentKind | None:
         image = Image.open(io.BytesIO(pix.tobytes("png")))
     else:
         image = _read_image(content)
-    return classify_text([" ".join(c.text for c in row) for row in group_rows(ocr_cells(image))])
+    for angle in (0, 270, 90, 180):  # a sideways scan with no orientation tag still has a title
+        turned = image.rotate(angle, expand=True) if angle else image
+        found = classify_text([" ".join(c.text for c in row) for row in group_rows(ocr_cells(turned))])
+        if found:
+            return found
+    return None
