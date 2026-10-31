@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -9,6 +10,8 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "qwen3:1.7b"
     database_url: str = "sqlite:///./dockproof.db"
+    uploads_dir: str = "./uploads"
+    catalog_path: str = str(Path(__file__).resolve().parents[3] / "fixtures" / "catalog.json")
     # Comma-separated exact origins allowed to call the API (e.g. your Vercel URL).
     cors_origins: str = "http://localhost:5173"
     # Optional regex for extra origins. Default allows the Vite dev server from a phone on a

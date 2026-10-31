@@ -10,7 +10,7 @@ Quick orientation for coding agents. Rules and scope live in `AGENTS.md` / `CLAU
 | `backend/app/api/reconciliations.py` | `frontend/src/services/api.ts` |
 
 Routes: `POST /api/reconciliations`, `GET /api/reconciliations/{id}`, `POST /api/reconciliations/{id}/approve`, `GET /api/health`.
-Unimplemented handlers return 501; services raise `NotImplementedError`. Replace stubs, don't rename them.
+Extra route: `GET /api/reconciliations/{id}/documents/{document_id}/file` serves the original scan for the confirm-against-image view.
 
 ## Backend modules (owner · status)
 
@@ -23,7 +23,9 @@ Unimplemented handlers return 501; services raise `NotImplementedError`. Replace
 | `services/store.py` | save/load Reconciliation JSON, transactions, audit log | backend | done |
 | `services/ollama.py` | async Ollama client | AI | done |
 | `core/db.py` | sqlite3 + schema (`init_db`, run at app startup) | backend | done |
-| `api/reconciliations.py` | HTTP orchestration | backend | stub |
+| `api/reconciliations.py` | HTTP orchestration: create / get / approve / original scan file | backend | done |
+| `services/pipeline.py` | extract -> match -> reconcile -> persist -> draft claim | backend | done |
+| `services/catalog.py` | loads `fixtures/catalog.json` (seeded catalog) | backend | done |
 
 ## Frontend (owner: frontend)
 

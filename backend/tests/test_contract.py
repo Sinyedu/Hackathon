@@ -13,8 +13,8 @@ def test_contract_routes_registered() -> None:
     assert "/api/reconciliations/{reconciliation_id}/approve" in paths
 
 
-def test_unimplemented_routes_say_so() -> None:
-    assert client.get("/api/reconciliations/abc").status_code == 501
+def test_unknown_reconciliation_404(db) -> None:
+    assert client.get("/api/reconciliations/abc").status_code == 404
 
 
 def test_init_db(db) -> None:

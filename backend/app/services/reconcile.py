@@ -24,7 +24,7 @@ class ReconcileResult(BaseModel):
 
 
 def _evidence(line: LineItem) -> str:
-    return f"{line.source_document_id}: {line.source_text} (qty {line.quantity} {line.unit})".strip()
+    return f"{line.source_document_id}: {line.source_text}"
 
 
 def _confirmed_item_ids(lines: list[LineItem], matches: dict[str, Match],
