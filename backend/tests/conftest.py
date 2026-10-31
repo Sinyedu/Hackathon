@@ -10,11 +10,19 @@ def db():
     state.audit_log.clear()
     state.sessions.clear()
     state.uploads.clear()
+    state.suppliers.clear()
+    state.supplier_products.clear()
+    state.recovery_plans.clear()
+    state.replacement_orders.clear()
     yield state
     state.reconciliations.clear()
     state.audit_log.clear()
     state.sessions.clear()
     state.uploads.clear()
+    state.suppliers.clear()
+    state.supplier_products.clear()
+    state.recovery_plans.clear()
+    state.replacement_orders.clear()
 
 
 @pytest.fixture
@@ -24,3 +32,10 @@ def client(db):
     from app.main import app
 
     yield TestClient(app)
+@pytest.fixture
+def seeded(client):
+    """Client whose process-local state holds synthetic suppliers."""
+    from app.services.suppliers import seed_suppliers
+
+    seed_suppliers()
+    return client

@@ -29,7 +29,7 @@ Supplier product names are inconsistent. A strict string comparison cannot relia
 ## MVP technology
 - **Frontend:** React, Vite, TypeScript, pnpm, native `fetch`.
 - **Backend:** Python, FastAPI, Pydantic.
-- **Storage:** SQLite.
+- **Storage:** Process-local memory, cleared when the backend restarts.
 - **Scan reading:** local OCR (RapidOCR) for photos and screenshots; PyMuPDF for text-based PDFs. Numbers come from OCR text, never from the model.
 - **Devices:** responsive web app; phone camera via native file capture on the local network.
 - **Matching:** normalization, RapidFuzz, and Ollama with **Qwen3 1.7B** (small open-weight model, Apache 2.0 model-family license; check the specific model distribution before redistribution).
@@ -63,6 +63,47 @@ Invoice comparison, email sending, external supplier integrations, ERP connectio
 - Document text is untrusted input, not an instruction to the model or application.
 - Claims are drafts until approved. External communication is outside MVP scope.
 - Demo data is synthetic and reproducible.
+
+## AutoRecover (implemented extension)
+When reconciliation finds a **shortage**, DockProof can prepare a recovery plan instead of just reporting it. The original MVP above is unchanged; AutoRecover is added on top of its persisted discrepancies.
+
+### Recovery workflow
+1. On a shortage, the user selects **Find Recovery Options**.
+2. The backend loads the persisted discrepancy, computes the missing quantity and the required amount (6 cases x 5 kg = 30 kg), and searches the supplier catalog.
+3. Deterministic rules classify every candidate: **exact match**, **verified repackaging** (same product, different pack size), **ambiguous** (related product), or **rejected** (different product, different measure, other category, unavailable).
+4. Only ambiguous candidates go to Qwen3 1.7B, one at a time. Its structured answer is validated; an unknown candidate ID, invalid JSON or an outage drops that candidate with a visible warning.
+5. Python calculates packages needed, stock coverage, `Decimal` total cost, package-rounding surplus and lead time, then ranks the options.
+6. The plan is persisted. The user can create a **draft replacement order** from a complete option, then approve or reject it. Approval changes an internal status only.
+
+### AI versus deterministic responsibilities
+| Qwen3 1.7B (local) | Python (deterministic) |
+|---|---|
+| Judges whether an *ambiguous* candidate (e.g. cherry vs regular tomatoes) is a usable substitute, with a short reason | Category, measure and package checks; quantity and package conversion |
+| Nothing else | Costs (`Decimal`), stock coverage, lead time, ranking and its explanations, persistence, state transitions, duplicate prevention |
+
+The model never supplies suppliers, products, prices, quantities, lead times or identifiers. If it is unavailable, exact and repackaged options are still returned.
+
+### Ranking (transparent, no AI score)
+Complete fulfilment first, then verified compatibility before AI-assessed substitutes, then the user's priority (**cheapest first** by default, or **fastest first**), then supplier name. Each option lists the factual reasons for its position (for example "Lowest total cost among complete options (540.00 DKK)").
+
+### Supplier catalog
+Synthetic suppliers in `fixtures/suppliers.json` are loaded into process-local memory by an idempotent seed. It runs at backend startup. Each product has supplier, description, category, sale unit, package size and unit, unit price and currency (DKK), available quantity, lead time and an availability flag. The demo data covers exact matches, a repackaged option, an ambiguous variant, a different product, a pieces-based package (rejected, no conversion), partial stock and an unavailable supplier. Prices and stock are invented, not real offers.
+
+### Human approval and safeguards
+- Replacement orders start as **draft**; at most one live (draft or approved) order exists per recovery plan, and repeated requests return the same order.
+- Approving an **AI-assessed substitute** requires explicit confirmation in the UI and API.
+- Approve and reject are one-way. They only record a status: no email, no supplier contact, no real order, no inventory change. Totals exclude taxes and shipping.
+
+### Synthetic demonstration scenario: Missing Tomatoes
+The demo button runs the real pipeline (OCR, matching, reconciliation) on the fixture scans: 24 cases ordered, 18 delivered, shortage of 6 cases = 30 kg. Expected result with the seed data: FarmDirect (3 x 10 kg box, 540.00 DKK, 2 days) recommended on cost; GreenSupply (6 x 5 kg, 612.00 DKK, same day) on speed; Nordic Fresh (570.00 DKK, 1 day) as the middle option; a partial option; and excluded candidates with reasons. Demo steps are in `README.md`.
+
+### Current limitations
+- Single-supplier recovery only; no split orders across suppliers.
+- Conversion only between identical measures (kg to kg, l to l, pcs to pcs); there is no kg/g or volume/weight conversion.
+- Prices are per package with no tax, shipping, minimum order or price tiers.
+- Compatibility of ambiguous products is judged by a 1.7B model on a handful of hand-written cases; every AI judgement needs human confirmation.
+- Recovery is available for shortages only, not over-deliveries or wrong items.
+- Supplier data is a static seed file; there is no supplier management UI or live catalog.
 
 ## Potential after the hackathon
 Add invoice reconciliation, handwriting and low-quality scan support, accounting/POS integrations, supplier-specific catalogs, claim delivery and status tracking, multi-location receiving, and measurable recovery of shortages and overcharges.

@@ -1,20 +1,21 @@
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pathlib import Path
-
-from app.api import catalog, health, reconciliations, sessions
+from app.api import catalog, health, reconciliations, recovery, sessions
 from app.core.config import get_settings
 from app.services.inbox import watch
-import asyncio
+from app.services.suppliers import seed_suppliers
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    seed_suppliers()
     watcher = asyncio.create_task(watch())
     try:
         yield
@@ -41,6 +42,7 @@ app.include_router(health.router, prefix="/api")
 app.include_router(catalog.router, prefix="/api")
 app.include_router(reconciliations.router, prefix="/api")
 app.include_router(sessions.router, prefix="/api")
+app.include_router(recovery.router, prefix="/api")
 
 frontend_dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 if frontend_dist.exists():

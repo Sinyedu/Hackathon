@@ -1,7 +1,8 @@
 import { TriangleAlert } from 'lucide-react'
 import type { Discrepancy } from '../types/reconciliation'
+import RecoveryPanel from './RecoveryPanel'
 
-export default function DiscrepancyList({ discrepancies }: { discrepancies: Discrepancy[] }) {
+export default function DiscrepancyList({ reconciliationId, discrepancies }: { reconciliationId: string; discrepancies: Discrepancy[] }) {
   return (
     <ul className="flex flex-col gap-3">
       {discrepancies.map((d) => {
@@ -26,6 +27,7 @@ export default function DiscrepancyList({ discrepancies }: { discrepancies: Disc
                 {d.evidence.map((e) => <li key={e}>{e}</li>)}
               </ul>
             </details>
+            {short && <RecoveryPanel reconciliationId={reconciliationId} itemId={d.catalog_item_id} />}
           </li>
         )
       })}

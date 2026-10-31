@@ -31,3 +31,6 @@ __pycache__/
 uploads/
 dock-inbox/
 dock-answers/
+
+# Vercel CLI link
+.vercel/

@@ -9,6 +9,7 @@ class Settings(BaseSettings):
 
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "qwen3:1.7b"
+    suppliers_path: str = str(Path(__file__).resolve().parents[3] / "fixtures" / "suppliers.json")
     catalog_path: str = str(Path(__file__).resolve().parents[3] / "fixtures" / "catalog.json")
     # Comma-separated exact origins allowed to call the API (e.g. your Vercel URL).
     cors_origins: str = "http://localhost:5173"

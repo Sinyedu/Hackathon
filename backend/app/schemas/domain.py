@@ -60,6 +60,10 @@ class CatalogItem(BaseModel):
     id: str
     description: str
     unit: str
+    # Package facts used by AutoRecover (optional so plain matching keeps working)
+    category: str | None = None
+    pack_size: Decimal | None = None
+    pack_unit: str | None = None
 
 
 class ModelMatchResult(BaseModel):

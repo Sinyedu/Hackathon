@@ -24,4 +24,6 @@ def test_process_local_store(db) -> None:
 
 def test_catalog_lists_known_products() -> None:
     items = client.get("/api/catalog").json()
-    assert {"id": "P001", "description": "Tomatoes, case 5 kg", "unit": "case"} in items
+    p001 = next(i for i in items if i["id"] == "P001")
+    assert (p001["description"], p001["unit"], p001["pack_size"], p001["pack_unit"]) == (
+        "Tomatoes, case 5 kg", "case", "5", "kg")

@@ -2,7 +2,7 @@ import { Loader2, ScanLine } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import FileSlot from '../components/FileSlot'
 import { errorMessage } from '../lib/errors'
-import { createReconciliation } from '../services/api'
+import { createReconciliation, startDemoScenario } from '../services/api'
 
 export default function ScanPage({ onDone }: { onDone: (id: string) => void }) {
   const [purchaseOrder, setPurchaseOrder] = useState<File | null>(null)
@@ -16,6 +16,18 @@ export default function ScanPage({ onDone }: { onDone: (id: string) => void }) {
     const timer = setInterval(() => setSeconds((s) => s + 1), 1000)
     return () => clearInterval(timer)
   }, [busy])
+
+  const demo = async () => {
+    setSeconds(0)
+    setBusy(true)
+    setError(null)
+    try {
+      onDone((await startDemoScenario()).id)
+    } catch (e) {
+      setError(errorMessage(e))
+      setBusy(false)
+    }
+  }
 
   const submit = async () => {
     if (!purchaseOrder || !deliveryNote) return
@@ -44,6 +56,10 @@ export default function ScanPage({ onDone }: { onDone: (id: string) => void }) {
         className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-lg font-semibold text-white hover:bg-indigo-700 disabled:bg-slate-300">
         {busy ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <ScanLine className="size-5" aria-hidden />}
         {busy ? `Reading documents and matching products… ${seconds}s` : 'Reconcile'}
+      </button>
+      <button onClick={demo} disabled={busy}
+        className="rounded-xl border border-slate-300 px-5 py-3 font-medium text-slate-700 hover:bg-white disabled:opacity-50">
+        Try the demo scenario: Missing Tomatoes (synthetic fixtures)
       </button>
     </main>
   )

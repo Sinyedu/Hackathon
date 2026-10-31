@@ -45,7 +45,7 @@ function Review({ initial, catalog }: { initial: Reconciliation; catalog: Parame
           {rec.warnings.map((w) => <li key={w}>{w}</li>)}
         </ul>
       )}
-      {rec.discrepancies.length > 0 && <DiscrepancyList discrepancies={rec.discrepancies} />}
+      {rec.discrepancies.length > 0 && <DiscrepancyList reconciliationId={rec.id} discrepancies={rec.discrepancies} />}
       <ClaimPanel rec={rec} dirty={corrections.dirty} busy={busy === 'approve'} error={busy ? null : error}
         onApprove={() => void run('approve', () => approveReconciliation(rec.id))} />
 

@@ -16,6 +16,10 @@ class SessionStore:
         self.audit_log: dict[str, list[tuple[str, str]]] = defaultdict(list)
         self.sessions: dict[str, dict] = {}
         self.uploads: dict[tuple[str, str], bytes] = {}
+        self.suppliers: dict[str, str] = {}
+        self.supplier_products: dict[str, str] = {}
+        self.recovery_plans: dict[str, str] = {}
+        self.replacement_orders: dict[str, str] = {}
 
 
 state = SessionStore()
