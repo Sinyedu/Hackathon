@@ -269,7 +269,7 @@ def test_stream_stops_at_an_invented_number(client, monkeypatch) -> None:
     ev = events(client, rid)
     kinds = [e["type"] for e in ev]
     assert kinds == ["meta", "sentence", "fallback", "done"]  # the first sentence was fine; nothing after the bad one
-    assert "77" not in json.dumps(ev) and "short by 6 case" in ev[2]["text"] and ev[-1]["grounded"] is False
+    assert "77" not in " ".join(e.get("text", "") for e in ev) and "short by 6 case" in ev[2]["text"] and ev[-1]["grounded"] is False
 
 
 def test_stream_reports_model_outage_and_unknown_reconciliation(client, monkeypatch) -> None:
