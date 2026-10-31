@@ -162,6 +162,11 @@ class Answer(BaseModel):
     yes: bool
 
 
+class Resolve(BaseModel):
+    line_id: str
+    catalog_item_id: str | None  # None = "this product is not in the catalog"
+
+
 class CountUpdate(BaseModel):
     line_id: str
     counted: Decimal | None = Field(default=None, ge=0)
@@ -172,6 +177,7 @@ class GenerateRequest(BaseModel):
     seed: int | None = None
     chaos: list[str] = Field(default_factory=list)
     ugliness: int = Field(default=0, ge=0, le=4)
+    format: str = Field(default="pdf", pattern="^(pdf|png)$")
 
 
 @router.post("/{session_id}/generate")
@@ -181,7 +187,7 @@ def generate_delivery(session_id: str, request: GenerateRequest) -> dict:
     try:
         generated = generate(session_id, request.persona,
                              request.seed if request.seed is not None else secrets.randbelow(1_000_000),
-                             request.chaos, request.ugliness)
+                             request.chaos, request.ugliness, request.format)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     session["generated"].append(generated)
@@ -195,7 +201,8 @@ def generated_preview(session_id: str, delivery_id: str) -> FileResponse:
     generated = next((item for item in session["generated"] if item["delivery_id"] == delivery_id), None)
     if generated is None:
         raise HTTPException(404, "Generated delivery not found")
-    return FileResponse(ROOT / "dock-inbox" / generated["delivery_note"], media_type="image/png")
+    name = generated["delivery_note"]
+    return FileResponse(ROOT / "dock-inbox" / name, media_type="application/pdf" if name.endswith(".pdf") else "image/png")
 
 
 @router.get("/{session_id}/reveal")
@@ -330,6 +337,28 @@ async def answer(session_id: str, answer: Answer) -> dict:
         session["rejected"].append(pair)
         rec = await corrections.apply_corrections(rid, Corrections(matches=[MatchChoice(line_id=line.id, catalog_item_id=None)]))
     _event(session, "answered", {"line_id": line.id, "yes": answer.yes, "status": rec.status})
+    _refresh_verdict(session)
+    return public_session(session)
+
+
+@router.post("/{session_id}/resolve")
+async def resolve(session_id: str, choice: Resolve) -> dict:
+    """Manual review: the user names the product for a line the matcher could not settle."""
+    session = _session(session_id)
+    rid = session["reconciliation_id"]
+    rec = store.get_reconciliation(rid) if rid else None
+    if rec is None or rec.status == "approved":
+        raise HTTPException(409, "No editable reconciliation")
+    line = next((l for l in rec.line_items if l.id == choice.line_id), None)
+    if line is None:
+        raise HTTPException(404, "Line not found")
+    try:
+        rec = await corrections.apply_corrections(rid, Corrections(matches=[MatchChoice(line_id=line.id, catalog_item_id=choice.catalog_item_id)]))
+    except (corrections.CorrectionInvalid, corrections.CorrectionConflict) as exc:
+        raise HTTPException(409, str(exc)) from exc
+    if choice.catalog_item_id:
+        session["aliases"][line.description] = choice.catalog_item_id
+    _event(session, "answered", {"line_id": line.id, "yes": bool(choice.catalog_item_id), "status": rec.status})
     _refresh_verdict(session)
     return public_session(session)
 

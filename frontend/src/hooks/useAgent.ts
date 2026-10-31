@@ -4,7 +4,7 @@ import { briefToMarkdown, type Brief } from '../lib/brief'
 import { errorMessage } from '../lib/errors'
 import { canSpeak, speak, stopSpeaking } from '../lib/speak'
 import { askQuestion, findRecovery, transcribeAudio } from '../services/api'
-import { approveSession, type LocalFile, type Session } from '../services/session'
+import { approveSession, resolveLine, type LocalFile, type Session } from '../services/session'
 import type { Document, Reconciliation } from '../types/reconciliation'
 import type { OrbPhase } from '../components/agent/ParticleOrb'
 import { parseWake } from '../lib/wake'
@@ -21,15 +21,23 @@ interface Args {
   brief: Brief
   refresh: (id: string) => Promise<void>
   onGenerate: () => void
+  /** The agent page is on screen; the first greeting waits for it. */
+  active: boolean
+  /** "Hey agent" heard on any page: bring the agent forward. */
+  onWake: () => void
 }
 
-export function useAgent({ inputs, session, result, brief, refresh, onGenerate }: Args) {
+/** A suggested replacement the user can follow; shown as a card with a real link. */
+export interface Offer { supplier: string; summary: string; url: string; isSearch: boolean }
+
+export function useAgent({ inputs, session, result, brief, refresh, onGenerate, active, onWake }: Args) {
   const [log, setLog] = useState<AgentLine[]>([])
   const [caption, setCaption] = useState({ text: '', at: 0 })
   const [speaking, setSpeaking] = useState(false)
   const [busy, setBusy] = useState(false)
   const [muted, setMuted] = useState(!canSpeak)
   const [confirming, setConfirming] = useState(false)
+  const [offer, setOffer] = useState<Offer | null>(null)
   // Which briefing window the agent just talked about; the panel opens it.
   const [focus, setFocus] = useState<{ title: string; at: number } | null>(null)
   const pulse = useRef(0)
@@ -66,13 +74,23 @@ export function useAgent({ inputs, session, result, brief, refresh, onGenerate }
     const best = plan.options.find((o) => o.option_id === plan.recommended_option_id)
     if (!best) return say(`No supplier in the catalog can cover the ${shortage.description} shortage. I did not invent one.`)
     const lead = best.lead_time_days === 0 ? 'same day' : `in ${best.lead_time_days} day${best.lead_time_days === 1 ? '' : 's'}`
-    say(`${best.supplier_name} can cover it: ${best.packages_needed} times ${best.pack_size} ${best.pack_unit} for ${best.total_cost} ${best.currency}, ${lead}. It is a suggestion only; nothing is ordered. The other options are under the shortage on the page.`)
+    const summary = `${best.packages_needed} × ${best.pack_size} ${best.pack_unit} for ${best.total_cost} ${best.currency}, ${lead}`
+    setOffer({ supplier: best.supplier_name, summary, url: best.buy_url, isSearch: best.buy_url_is_search })
+    say(`${best.supplier_name} can cover it: ${best.packages_needed} times ${best.pack_size} ${best.pack_unit} for ${best.total_cost} ${best.currency}, ${lead}. Tap the link on screen to open it. It is a suggestion only; nothing is ordered.`)
   }
 
   const docs = useAgentFiles({ session, inputs, say, note: (text) => add({ who: 'agent', text }) })
   const importOne = (file: LocalFile) => void run(() => docs.importNamed(file.name))
   const assignKind = (kind: 'purchase_order' | 'delivery_note') => void run(() => docs.assignPending(kind))
   const uploadPicked = (picked: File[]) => void run(() => docs.uploadPicked(picked))
+  const resolve = (lineId: string, catalogItemId: string | null) => session && void run(async () => {
+    await resolveLine(session.id, lineId, catalogItemId)
+    await refresh(session.id)
+  })
+  const openOffer = () => {
+    if (!offer) return say('I have no replacement to open yet. Ask me to find a replacement first.')
+    if (!window.open(offer.url, '_blank', 'noopener')) say('Your browser blocked the pop-up. Tap the link on screen to open it.')
+  }
 
   const elaborate = (text: string) => {
     const section = brief.sections.find((s) => s.title === sectionFor(text)) ?? brief.sections[0]
@@ -95,6 +113,7 @@ export function useAgent({ inputs, session, result, brief, refresh, onGenerate }
     const intent = intentOf(text)
     if (intent === 'brief') return say(brief.spoken)
     if (intent === 'export') { exportBrief(); return say('I downloaded the briefing as a Markdown file.') }
+    if (intent === 'link') return openOffer()
     if (intent === 'files') return run(() => docs.attach(text))
     if (intent === 'generate') { onGenerate(); return say('Opening test deliveries. Print one and I will read it as soon as it lands.') }
     if (intent === 'elaborate') return elaborate(text)
@@ -132,7 +151,9 @@ export function useAgent({ inputs, session, result, brief, refresh, onGenerate }
         setBusy(false)
         const rest = parseWake(heard)
         if (rest === null) return Date.now() < followUpUntil.current ? handle(heard) : undefined
+        onWake()
         if (rest) return handle(rest)
+        say('Yes boss?')
         followUpUntil.current = Date.now() + 10_000 // bare "Hey agent": the next utterance is the request
       })
       .catch((e: unknown) => { setBusy(false); say(`I could not hear that: ${errorMessage(e)}`, { error: true }) })
@@ -156,12 +177,12 @@ export function useAgent({ inputs, session, result, brief, refresh, onGenerate }
   // Greet once the session is known; go quiet when the agent page is left.
   const greeted = useRef(false)
   useEffect(() => {
-    if (!session || greeted.current) return
+    if (!session || !active || greeted.current) return
     greeted.current = true
     seen.current = session.events.length
     say(brief.spoken)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session])
+  }, [session, active])
   useEffect(() => stopSpeaking, [])
 
   // Narrate live session events while open.
@@ -173,7 +194,7 @@ export function useAgent({ inputs, session, result, brief, refresh, onGenerate }
     if (!latest) return
     const waitingFor = fresh.at(-1)?.data.waiting_for
     if (latest === 'verdict') awaitingVerdict.current = true
-    else if (latest === 'delivery_received' && waitingFor) say(`Got it. Now I need the ${waitingFor.replace('_', ' ')}.`)
+    else if (latest === 'delivery_received' && waitingFor) say(`Alright boss, got it. Now I need the ${waitingFor.replace('_', ' ')}.`)
     else if (EVENT_LINES[latest]) say(EVENT_LINES[latest])
   }, [session, say])
 
@@ -186,5 +207,5 @@ export function useAgent({ inputs, session, result, brief, refresh, onGenerate }
 
   const phase: OrbPhase = mic.recording || hands.capturing ? 'listening' : busy ? 'thinking' : speaking ? 'speaking' : 'idle'
   const toggleMute = () => { if (!muted) { stopSpeaking(); setSpeaking(false) } setMuted(!muted) }
-  return { log, caption, phase, pulse, mic: { ...mic, error: mic.error ?? hands.error }, muted, toggleMute, busy, confirming, setConfirming, confirmApproval, handle, exportBrief, docs, importOne, assignKind, uploadPicked, focus }
+  return { log, caption, phase, pulse, mic: { ...mic, error: mic.error ?? hands.error }, muted, toggleMute, busy, confirming, setConfirming, confirmApproval, handle, exportBrief, docs, importOne, assignKind, uploadPicked, focus, offer, resolve }
 }

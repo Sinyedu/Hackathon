@@ -1,10 +1,12 @@
 import { ArrowUp, Camera, FileText, Mic, Square, Upload as UploadIcon, Volume2, VolumeX } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useState, type RefObject } from 'react'
 import AgentBrief from '../components/agent/AgentBrief'
+import OfferCard from '../components/agent/OfferCard'
 import ParticleOrb from '../components/agent/ParticleOrb'
+import ReviewLines from '../components/agent/ReviewLines'
 import { PairCard } from '../components/StartPanels'
 import { Questions } from '../components/Verdict'
-import { useAgent } from '../hooks/useAgent'
+import type { useAgent } from '../hooks/useAgent'
 import { isTouch } from '../lib/device'
 import { canSpeak } from '../lib/speak'
 import type { Brief } from '../lib/brief'
@@ -15,19 +17,18 @@ const STATUS = { idle: 'Ready', listening: 'Listening', thinking: 'Working', spe
 const PROMPTS = ['Catch me up', 'What is missing?', 'Elaborate', 'Find a replacement', 'Export the briefing']
 
 interface Props {
+  agent: ReturnType<typeof useAgent>
+  fileInput: RefObject<HTMLInputElement | null>
+  cameraInput: RefObject<HTMLInputElement | null>
   session: Session | null
   result: Reconciliation | null
   brief: Brief
   refresh: (id: string) => Promise<void>
   onError: (message: string) => void
-  onGenerate: () => void
   isDock: boolean
 }
 
-export default function AgentPage({ session, result, brief, refresh, onError, onGenerate, isDock }: Props) {
-  const fileInput = useRef<HTMLInputElement>(null)
-  const cameraInput = useRef<HTMLInputElement>(null)
-  const agent = useAgent({ inputs: { file: fileInput, camera: cameraInput }, session, result, brief, refresh, onGenerate })
+export default function AgentPage({ agent, fileInput, cameraInput, session, result, brief, refresh, onError, isDock }: Props) {
   const [text, setText] = useState('')
   const [dragging, setDragging] = useState(false)
   const { mic, caption, phase, docs } = agent
@@ -40,11 +41,6 @@ export default function AgentPage({ session, result, brief, refresh, onError, on
     event.preventDefault()
     setDragging(false)
     if (event.dataTransfer.files.length) agent.uploadPicked(Array.from(event.dataTransfer.files))
-  }
-  const picked = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? [])
-    event.currentTarget.value = ''
-    if (files.length) agent.uploadPicked(files)
   }
 
   return (
@@ -65,6 +61,8 @@ export default function AgentPage({ session, result, brief, refresh, onError, on
         </p>
 
         {session && result && <Questions session={session} result={result} refresh={refresh} onError={onError} />}
+        {result && <ReviewLines result={result} busy={agent.busy} onResolve={agent.resolve} />}
+        {agent.offer && <OfferCard offer={agent.offer} />}
         {docs.pending && (
           <div className="agent__confirm">
             <p>Which document is <b>{docs.pending.file.name}</b>?</p>
@@ -124,8 +122,6 @@ export default function AgentPage({ session, result, brief, refresh, onError, on
         {result && <div className="agent__prompts">
           {PROMPTS.map((prompt) => <button key={prompt} onClick={() => send(prompt)} disabled={agent.busy}>{prompt}</button>)}
         </div>}
-        <input ref={fileInput} className="visually-hidden" type="file" multiple accept="image/*,.pdf,application/pdf" tabIndex={-1} onChange={picked} />
-        <input ref={cameraInput} className="visually-hidden" type="file" accept="image/*" capture="environment" tabIndex={-1} onChange={picked} />
       </div>
 
       <AgentBrief brief={brief} log={agent.log} reconciliationId={result?.id ?? null} onExport={agent.exportBrief} focus={agent.focus}>

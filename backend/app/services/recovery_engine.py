@@ -5,6 +5,7 @@ measures (kg->kg, l->l, pcs->pcs); anything else is rejected upstream by compat.
 """
 
 from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal
+from urllib.parse import quote_plus
 
 from app.schemas.domain import CatalogItem
 from app.schemas.recovery import Compatibility, Priority, RecoveryOption, SupplierProduct
@@ -19,6 +20,16 @@ def required_amount(missing_quantity: Decimal, original: CatalogItem) -> Decimal
     return missing_quantity * original.pack_size
 
 
+def buy_link(candidate: SupplierProduct) -> tuple[str, bool]:
+    """The supplier's page when the catalog has one; otherwise a live web search for the product.
+    The demo catalog is synthetic, so a search is the honest way to reach real offers."""
+    if candidate.url:
+        return candidate.url, False
+    pack = f"{candidate.pack_size.normalize():f}"
+    query = " ".join(filter(None, [candidate.description, "" if pack in candidate.description else f"{pack} {candidate.pack_unit}", "wholesale"]))
+    return f"https://www.google.com/search?q={quote_plus(query)}", True
+
+
 def make_option(candidate: SupplierProduct, compatibility: Compatibility, note: str,
                 required: Decimal, ai_reason: str | None = None) -> RecoveryOption:
     needed = int((required / candidate.pack_size).to_integral_value(rounding=ROUND_CEILING))
@@ -27,6 +38,7 @@ def make_option(candidate: SupplierProduct, compatibility: Compatibility, note: 
     fulfills = orderable >= needed
     covered = candidate.pack_size * orderable
     verified = compatibility != Compatibility.AI_SUBSTITUTE
+    url, is_search = buy_link(candidate)
     return RecoveryOption(
         option_id=candidate.id, supplier_id=candidate.supplier_id, supplier_name=candidate.supplier_name,
         product_id=candidate.id, description=candidate.description, compatibility=compatibility,
@@ -36,7 +48,7 @@ def make_option(candidate: SupplierProduct, compatibility: Compatibility, note: 
         available_qty=candidate.available_qty, fulfills_shortage=fulfills, unit_price=candidate.unit_price,
         currency=candidate.currency, total_cost=(candidate.unit_price * orderable).quantize(CENT),
         excess_amount=max(covered - required, Decimal(0)) if fulfills else Decimal(0),
-        lead_time_days=candidate.lead_time_days)
+        lead_time_days=candidate.lead_time_days, buy_url=url, buy_url_is_search=is_search)
 
 
 def _sort_key(option: RecoveryOption, priority: Priority) -> tuple:

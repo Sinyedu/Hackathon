@@ -1,6 +1,7 @@
 import { FlaskConical, Mic, ScrollText } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import LiveDot from '../components/LiveDot'
+import { useAgent } from '../hooks/useAgent'
 import { useLiveSession } from '../hooks/useLiveSession'
 import { usePath } from '../hooks/usePath'
 import { buildBrief } from '../lib/brief'
@@ -21,6 +22,18 @@ export default function LiveWorkspace() {
   const hrefOf = (to: string) => (to === '/' ? base || '/' : base + to)
   const { session, result, error, setError, refresh } = useLiveSession(isDock)
   const brief = useMemo(() => buildBrief(session, result), [session, result])
+  const fileInput = useRef<HTMLInputElement>(null)
+  const cameraInput = useRef<HTMLInputElement>(null)
+  // The agent lives here, above the pages, so it keeps listening (and can be woken) on every screen.
+  const agent = useAgent({
+    inputs: { file: fileInput, camera: cameraInput }, session, result, brief, refresh,
+    active: page === '/', onGenerate: () => go(hrefOf('/generate')), onWake: () => go(hrefOf('/')),
+  })
+  const picked = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? [])
+    event.currentTarget.value = ''
+    if (files.length) agent.uploadPicked(files)
+  }
 
   return <div className={`app${isDock ? ' app--dock' : ''}`}>
     <header className="topbar">
@@ -35,10 +48,12 @@ export default function LiveWorkspace() {
     </header>
 
     {error && <div className="banner" role="alert">{error}</div>}
-    {page === '/' ? <AgentPage session={session} result={result} brief={brief} refresh={refresh} onError={setError} onGenerate={() => go(hrefOf('/generate'))} isDock={isDock} />
+    <input ref={fileInput} className="visually-hidden" type="file" multiple accept="image/*,.pdf,application/pdf" tabIndex={-1} onChange={picked} />
+    <input ref={cameraInput} className="visually-hidden" type="file" accept="image/*" capture="environment" tabIndex={-1} onChange={picked} />
+    {page === '/' ? <AgentPage agent={agent} fileInput={fileInput} cameraInput={cameraInput} session={session} result={result} brief={brief} refresh={refresh} onError={setError} isDock={isDock} />
       : <main className="main">
         {!session ? <p className="muted">{isDock ? 'Open the QR link from the office screen to pair this phone.' : 'Starting a local session…'}</p>
-          : page === '/generate' ? <GeneratePage session={session} onError={setError} onOpenAgent={() => go(hrefOf('/'))} />
+          : page === '/generate' ? <GeneratePage session={session} onError={setError} onOpenAgent={() => go(hrefOf('/'))} onPrinted={() => go(hrefOf('/'))} />
             : <DetailsPage session={session} result={result} refresh={refresh} onError={setError} isDock={isDock} />}
       </main>}
   </div>

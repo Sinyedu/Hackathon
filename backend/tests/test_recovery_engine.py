@@ -114,3 +114,12 @@ def test_rank_reasons_are_derived_from_the_data() -> None:
 @pytest.mark.parametrize("stock,expected", [("6", True), ("5.9", False)])
 def test_stock_is_floored_to_whole_packages(stock, expected) -> None:
     assert option(product(stock=stock)).fulfills_shortage is expected
+
+
+def test_option_links_to_a_product_search_unless_the_supplier_has_a_page() -> None:
+    searched = option(product(description="Tomato Box 5KG", pack="5"))
+    assert searched.buy_url_is_search
+    assert searched.buy_url.startswith("https://www.google.com/search?q=Tomato+Box+5KG+wholesale")
+    own = product(description="Tomato Box 5KG").model_copy(update={"url": "https://supplier.example/tomatoes"})
+    linked = option(own)
+    assert linked.buy_url == "https://supplier.example/tomatoes" and not linked.buy_url_is_search

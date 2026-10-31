@@ -1,3 +1,4 @@
+import { ExternalLink } from 'lucide-react'
 import type { RecoveryOption } from '../types/recovery'
 import CompatBadge from './CompatBadge'
 
@@ -26,9 +27,12 @@ export default function RecoveryOptionRow({ option: o, hasLiveOrder, busy, onSel
         <CompatBadge option={o} />
         {o.tags.filter((t) => t !== 'recommended').map((t) => <span key={t} className="rounded-full bg-slate-100 px-2 py-0.5 text-xs capitalize text-slate-700">{t}</span>)}
         {!o.fulfills_shortage && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">Partial: {o.packages_orderable}/{o.packages_needed}</span>}
+        <a href={o.buy_url} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-indigo-700 underline underline-offset-2">
+          <ExternalLink className="size-3.5" aria-hidden /> {o.buy_url_is_search ? 'Find online' : 'Supplier page'}
+        </a>
         {o.fulfills_shortage && (
           <button onClick={onSelect} disabled={busy || hasLiveOrder}
-            className="ml-auto rounded-md border border-indigo-300 px-3 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-50 disabled:opacity-40">Select</button>
+            className="rounded-md border border-indigo-300 px-3 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-50 disabled:opacity-40">Select</button>
         )}
       </div>
       <details className="mt-2 text-xs text-slate-600">

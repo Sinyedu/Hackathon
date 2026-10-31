@@ -32,6 +32,8 @@ export interface RecoveryOption {
   rank: number
   rank_reasons: string[]
   tags: string[]
+  buy_url: string
+  buy_url_is_search: boolean
 }
 
 export interface ExcludedCandidate {

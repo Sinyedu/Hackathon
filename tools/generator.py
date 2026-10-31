@@ -5,6 +5,7 @@ import hashlib
 import random
 from pathlib import Path
 
+import pymupdf
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -68,7 +69,37 @@ def _render(title: str, code: str, rows: list[tuple[str, int, str, str | None]],
     return image
 
 
-def generate(session_id: str, persona: str, seed: int, chaos: list[str], ugliness: int = 0) -> dict:
+def _font_file(bold: bool) -> str:
+    """Path of a TTF that draws the euro sign; the standard PDF fonts cannot."""
+    names = (["/usr/share/fonts/google-noto/NotoSans-Bold.ttf", "/usr/share/fonts/liberation-sans-fonts/LiberationSans-Bold.ttf",
+              "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans-Bold.ttf"] if bold else
+             ["/usr/share/fonts/google-noto/NotoSans-Regular.ttf", "/usr/share/fonts/liberation-sans-fonts/LiberationSans-Regular.ttf",
+              "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf"])
+    for name in names:
+        if Path(name).exists():
+            return name
+    raise RuntimeError("A TrueType font with the euro sign is required to generate PDF fixtures")
+
+
+def _write_pdf(path: Path, title: str, code: str, rows: list[tuple[str, int, str, str | None]]) -> None:
+    """Text-based PDF, one line per product ("Name 18 case €12.50"), read without OCR."""
+    document = pymupdf.open()
+    page = document.new_page(width=595, height=842)
+    page.insert_font(fontname="body", fontfile=_font_file(False))
+    page.insert_font(fontname="bold", fontfile=_font_file(True))
+    page.insert_text((50, 60), "DOCKPROOF / SYNTHETIC DOCUMENT", fontsize=9, fontname="body", color=(.35, .35, .35))
+    page.insert_text((50, 100), title, fontsize=26, fontname="bold")
+    page.insert_text((50, 128), code, fontsize=12, fontname="body", color=(.2, .2, .2))
+    for n, (name, quantity, unit, price) in enumerate(rows):
+        line = f"{name} {quantity} {unit}" + (f" €{price}" if price else "")
+        page.insert_text((50, 190 + n * 34), line, fontsize=14, fontname="body")
+    document.save(path)
+    document.close()
+
+
+def generate(session_id: str, persona: str, seed: int, chaos: list[str], ugliness: int = 0, fmt: str = "png") -> dict:
+    if fmt not in {"png", "pdf"}:
+        raise ValueError("Format must be png or pdf")
     if persona not in NAMES:
         raise ValueError("Unknown supplier persona")
     if ugliness < 0 or ugliness > 4:
@@ -102,9 +133,13 @@ def generate(session_id: str, persona: str, seed: int, chaos: list[str], uglines
     INBOX.mkdir(exist_ok=True)
     ANSWERS.mkdir(exist_ok=True)
     stem = f"{session_id}_{delivery_id}"
-    po_name, note_name = f"{stem}_po.png", f"{stem}_dn.png"
-    _render("PURCHASE ORDER", f"PO-{delivery_id}", po_rows, seed, ugliness).save(INBOX / po_name)
-    _render("DELIVERY NOTE", f"DN-{delivery_id}", note_rows, seed, ugliness).save(INBOX / note_name)
+    po_name, note_name = f"{stem}_po.{fmt}", f"{stem}_dn.{fmt}"
+    if fmt == "pdf":
+        _write_pdf(INBOX / po_name, "PURCHASE ORDER", f"PO-{delivery_id}", po_rows)
+        _write_pdf(INBOX / note_name, "DELIVERY NOTE", f"DN-{delivery_id}", note_rows)
+    else:
+        _render("PURCHASE ORDER", f"PO-{delivery_id}", po_rows, seed, ugliness).save(INBOX / po_name)
+        _render("DELIVERY NOTE", f"DN-{delivery_id}", note_rows, seed, ugliness).save(INBOX / note_name)
     key = {"delivery_id": delivery_id, "session_id": session_id, "supplier": persona,
            "seed": seed, "problems": problems, "true_counts": true_counts,
            "ordered_quantities": quantities,

@@ -1,12 +1,13 @@
 import type { LocalFile } from '../services/session'
 
-export type Intent = 'brief' | 'findings' | 'elaborate' | 'recover' | 'export' | 'approve' | 'generate' | 'files' | 'import' | 'ask'
+export type Intent = 'brief' | 'findings' | 'elaborate' | 'recover' | 'export' | 'approve' | 'generate' | 'link' | 'files' | 'import' | 'ask'
 
 // Commands are matched locally so actions never depend on the model's wording.
 // Anything that is not a command goes to the local model as a question.
 const RULES: [Intent, RegExp][] = [
   ['approve', /\b(approve|sign (it )?off|accept the claim)\b/i],
   ['export', /\b(export|download|save (the )?(brief|briefing|report|summary))\b/i],
+  ['link', /\b(replacement link|(open|follow|show)\b.*\b(link|supplier page)|where (can|do) i (buy|order|get))\b/i],
   ['generate', /\b(test deliver\w*|(generate|print|make|create) (me )?(a |the |some )?(delivery|deliveries|test|files?|documents?))\b/i],
   ['files', /\b(attach|upload|my files|take a (photo|picture)|camera|scan (a|the|this|it)|add (a |the |some )?(file|files|document|documents|scan|scans)|choose (a )?files?|(open|show|list|check)\b.*\b(files|folder|documents)|what files)\b/i],
   ['import', /\b(import|load|bring in|open (the )?(purchase|delivery|po|dn|both))\b/i],
@@ -76,7 +77,6 @@ export function pickFiles(text: string, files: LocalFile[]): LocalFile[] | 'ambi
 /** One plain sentence per live session event, spoken while the agent is open. */
 export const EVENT_LINES: Record<string, string> = {
   printed_to_dock: 'A new delivery was printed to the dock.',
-  delivery_received: 'Alright boss, I have it.',
   reading: 'Alright boss, I will process it. Reading the documents now.',
   extracted: 'I have pulled the lines out of the scans.',
   matching: 'Matching products between the order and the delivery note.',
