@@ -29,7 +29,7 @@ export default function ProofSheet({ result, line, onClose }: { result: Reconcil
   }, [line, isPdf, url])
   return <div className="proof-backdrop" onClick={onClose}><section className="proof-sheet" role="dialog" aria-modal="true" aria-label="Source proof" onClick={event => event.stopPropagation()}>
     <button className="proof-close" onClick={onClose} aria-label="Close proof">Close</button>
-    <div className="section-label">SOURCE PROOF / {document?.kind.replace('_', ' ').toUpperCase()}</div>
+    <p className="proof-kind">From the {document?.kind.replace('_', ' ')}</p>
     <h2>{line.description}</h2>
     <div className="proof-frame">{isPdf ? <a href={url} target="_blank" rel="noreferrer">Open source PDF, page {line.page || 1}</a> : <canvas ref={canvas} aria-label="Cropped source line" />}</div>
     <p>{line.source_text}</p><small>{document?.filename} · {line.page ? `Page ${line.page}` : 'Image'} · {line.id.split('-').at(-1)}</small>

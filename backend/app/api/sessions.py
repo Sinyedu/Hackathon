@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 from app.api.reconciliations import _read
 from app.schemas.domain import Corrections, Discrepancy, DocumentKind, MatchChoice, MatchStatus
-from app.services import claims, corrections, pipeline, store
+from app.services import claims, corrections, files, pipeline, store
 from app.services.counting import calculate
 from app.services.extract import ExtractionError
 from app.services.match import normalize_unit
@@ -94,6 +94,40 @@ async def upload(session_id: str, purchase_order: UploadFile | None = None,
         session["purchase_order"] = await _read(purchase_order, DocumentKind.PURCHASE_ORDER)
     if delivery_note is not None and delivery_note.filename:
         session["delivery_note"] = await _read(delivery_note, DocumentKind.DELIVERY_NOTE)
+    return await _process_when_paired(session)
+
+
+class ImportRequest(BaseModel):
+    filename: str = Field(min_length=1, max_length=255)
+    kind: DocumentKind | None = None
+
+
+@router.get("/{session_id}/files")
+def list_importable(session_id: str) -> dict:
+    _session(session_id)
+    base = files.folder()
+    shown = base.relative_to(ROOT) if base.is_relative_to(ROOT) else base
+    return {"folder": str(shown), "files": files.list_files()}
+
+
+@router.post("/{session_id}/import")
+async def import_file(session_id: str, request: ImportRequest) -> dict:
+    """Import a document from the local files folder by name (used by the voice agent)."""
+    session = _session(session_id)
+    kind = request.kind or files.guess_kind(request.filename)
+    if kind not in (DocumentKind.PURCHASE_ORDER, DocumentKind.DELIVERY_NOTE):
+        raise HTTPException(422, f"Say whether {request.filename} is the purchase order or the delivery note")
+    try:
+        content = files.read_file(request.filename)
+    except KeyError as exc:
+        raise HTTPException(404, f"No file named {request.filename} in the files folder") from exc
+    except ValueError as exc:
+        raise HTTPException(413, str(exc)) from exc
+    session[kind.value] = pipeline.Upload(kind=kind, filename=request.filename, content=content)
+    return await _process_when_paired(session)
+
+
+async def _process_when_paired(session: dict) -> dict:
     if not session["purchase_order"] or not session["delivery_note"]:
         _event(session, "delivery_received", {"waiting_for": "purchase_order" if not session["purchase_order"] else "delivery_note"})
         return public_session(session)

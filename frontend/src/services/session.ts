@@ -50,6 +50,10 @@ export const uploadSession = (id: string, files: { purchase_order?: File; delive
   if (files.delivery_note) body.append('delivery_note', files.delivery_note)
   return json<Session>(`/api/session/${id}/upload`, { method: 'POST', body })
 }
+export interface LocalFile { name: string; size: number; kind: 'purchase_order' | 'delivery_note' | null }
+export const listFiles = (id: string) => json<{ folder: string; files: LocalFile[] }>(`/api/session/${id}/files`)
+export const importFile = (id: string, filename: string, kind?: 'purchase_order' | 'delivery_note') =>
+  json<Session>(`/api/session/${id}/import`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename, kind }) })
 export const answerSession = (id: string, line_id: string, catalog_item_id: string, yes: boolean) =>
   json<Session>(`/api/session/${id}/answer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ line_id, catalog_item_id, yes }) })
 export const approveSession = (id: string) => json<Session>(`/api/session/${id}/approve`, { method: 'POST' })
