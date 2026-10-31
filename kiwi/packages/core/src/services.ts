@@ -35,7 +35,6 @@ export interface CodingEvent {
 export interface CodingResult {
   summary: string;
   diffSummary: string;
-  testResult: string;
 }
 
 /** Runs a coding task in an isolated branch. Nothing touches the main copy until `keep`. */
@@ -47,6 +46,8 @@ export interface CodingBackendPort {
     onProgress: (event: CodingEvent) => void,
   ): Promise<Fallible<CodingResult>>;
   diff(): Promise<string>;
+  /** Runs the project's tests in the isolated branch. Only called after the user agrees. */
+  runTests(): Promise<string>;
   keep(): Promise<Fallible<{ message: string }>>;
   discard(): Promise<void>;
   hasPending(): boolean;

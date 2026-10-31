@@ -54,6 +54,13 @@ const api: KiwiApi = {
     onCommand: (handler) => subscribe(ipcChannels.voiceCommand, voiceCommandSchema, handler),
     pushStart: () => ipcRenderer.send(ipcChannels.voicePushStart),
     pushEnd: () => ipcRenderer.send(ipcChannels.voicePushEnd),
+    speak: async (text) => {
+      await ipcRenderer.invoke(ipcChannels.voiceSpeak, { text });
+    },
+    cancelSpeech: () => ipcRenderer.send(ipcChannels.voiceSpeakCancel),
+    speechAvailable: async () =>
+      (await ipcRenderer.invoke(ipcChannels.voiceSpeechAvailable)) === true,
+    test: () => ipcRenderer.send(ipcChannels.voiceTest),
   },
   settings: {
     get: async () =>

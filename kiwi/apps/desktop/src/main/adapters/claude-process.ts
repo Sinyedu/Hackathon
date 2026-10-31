@@ -2,7 +2,6 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import type { CodingEvent, Fallible } from '@kiwi/core';
 
 export interface ClaudeProcessOptions {
-  testCommand: string;
   claudeCommand?: string;
   timeoutMs?: number;
   maxMessages?: number;
@@ -42,19 +41,21 @@ const resultFrom = (line: string): string | null =>
 function buildArgs(task: string, options: ClaudeProcessOptions): string[] {
   return [
     '-p',
-    `${task}\n\nMake the smallest change that works and run the tests when done.`,
+    `${task}
+
+Make the smallest change that works. You cannot run commands; the user runs the tests afterwards.`,
     '--output-format',
     'stream-json',
     '--verbose',
     '--permission-mode',
     'dontAsk',
+    // No shell tool: the agent can only read and edit files in its worktree.
     '--allowedTools',
     'Read',
     'Glob',
     'Grep',
     'Edit',
     'Write',
-    `Bash(${options.testCommand})`,
     '--max-budget-usd',
     String(options.maxBudgetUsd ?? 1),
     '--no-session-persistence',

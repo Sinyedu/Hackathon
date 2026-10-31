@@ -7,12 +7,14 @@ import {
   pingRequestSchema,
   setInteractiveSchema,
   settingsPatchSchema,
+  speakSchema,
   setupPullSchema,
   voiceEventSchema,
   type PingResponse,
 } from '@kiwi/shared';
 import type { AgentHost } from './agent-host';
 import type { MascotController } from './mascot-controller';
+import type { SystemSpeech } from './adapters/system-speech';
 import type { SetupHost } from './setup-host';
 import type { VoiceHost } from './voice-host';
 
@@ -24,6 +26,7 @@ export function registerIpc(
   host: AgentHost,
   voice: VoiceHost,
   setup: SetupHost,
+  speech: SystemSpeech,
 ): void {
   const isUi: TrustCheck = (id) => controller.isOwnWebContents(id);
   const isUiOrVoice: TrustCheck = (id) => isUi(id) || voice.isVoiceWindow(id);
@@ -41,6 +44,7 @@ export function registerIpc(
   registerChatIpc(host, trusting(isUi), trusting(isUiOrVoice));
   registerVoiceIpc(host, voice, isUi, trusting(isUi), trusting(isUiOrVoice));
   registerSetupIpc(setup, isUi, trusting(isUi));
+  registerSpeechIpc(speech, isUiOrVoice, trusting(isUiOrVoice), trusting(isUi), voice);
 }
 
 function registerWindowIpc(
@@ -104,6 +108,25 @@ function registerVoiceIpc(
   });
 }
 
+function registerSpeechIpc(
+  speech: SystemSpeech,
+  isTrusted: TrustCheck,
+  onUiOrVoice: OnTrusted,
+  onUi: OnTrusted,
+  voice: VoiceHost,
+): void {
+  ipcMain.handle(ipcChannels.voiceSpeak, async (event, payload: unknown) => {
+    if (!isTrusted(event.sender.id)) throw new Error('Untrusted sender');
+    await speech.speak(speakSchema.parse(payload).text);
+  });
+  ipcMain.handle(ipcChannels.voiceSpeechAvailable, (event) => {
+    if (!isTrusted(event.sender.id)) throw new Error('Untrusted sender');
+    return speech.available();
+  });
+  onUiOrVoice(ipcChannels.voiceSpeakCancel, () => speech.cancel());
+  onUi(ipcChannels.voiceTest, () => voice.command({ type: 'speakTest' }));
+}
+
 function registerSetupIpc(setup: SetupHost, isUi: TrustCheck, onUi: OnTrusted): void {
   ipcMain.handle(ipcChannels.setupStatus, (event) => {
     if (!isUi(event.sender.id)) throw new Error('Untrusted sender');
@@ -116,7 +139,8 @@ function registerSetupIpc(setup: SetupHost, isUi: TrustCheck, onUi: OnTrusted): 
 }
 
 /** The kill switch: audio, the agent run and any pending confirmation stop together. */
-export function stopAll(host: AgentHost, voice: VoiceHost): void {
+export function stopAll(host: AgentHost, voice: VoiceHost, speech?: SystemSpeech): void {
   host.cancel();
+  speech?.cancel();
   voice.command({ type: 'stopAll' });
 }

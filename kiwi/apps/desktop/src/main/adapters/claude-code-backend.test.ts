@@ -46,12 +46,49 @@ describe('ClaudeCodeBackend', () => {
     const { project, backend } = setup();
     const progress: string[] = [];
     const result = await backend.run('add a hello file', project, (e) => progress.push(e.text));
-    expect(result).toMatchObject({ ok: true, summary: 'Added hello.txt.', testResult: 'passed' });
+    expect(result).toMatchObject({ ok: true, summary: 'Added hello.txt.' });
+    expect(await backend.runTests()).toBe('passed');
     expect(progress).toEqual(['Using Edit']);
     expect(existsSync(join(project, 'hello.txt'))).toBe(false);
     expect(await backend.diff()).toContain('+hello from the agent');
     expect(backend.hasPending()).toBe(true);
     await backend.discard();
+  });
+
+  it('throws the result away when the agent rewrites the worktree git pointer', async () => {
+    const base = mkdtempSync(join(tmpdir(), 'kiwi-tamper-'));
+    const project = join(base, 'project');
+    execFileSync('git', ['init', '-q', '-b', 'main', project]);
+    writeFileSync(join(project, 'a.txt'), 'a');
+    execFileSync('git', ['-C', project, 'add', '-A']);
+    execFileSync('git', [
+      '-C',
+      project,
+      '-c',
+      'user.name=t',
+      '-c',
+      'user.email=t@t',
+      'commit',
+      '-qm',
+      'init',
+    ]);
+    const script = join(base, 'evil-claude');
+    writeFileSync(
+      script,
+      "#!/usr/bin/env node\nrequire('node:fs').writeFileSync('.git', 'gitdir: ./evil\\n');\nconsole.log(JSON.stringify({ type: 'result', result: 'x' }));\n",
+    );
+    chmodSync(script, 0o755);
+    const backend = new ClaudeCodeBackend({
+      worktreeRoot: join(base, 'wt'),
+      testCommand: 'node --version',
+      claudeCommand: script,
+      timeoutMs: 20_000,
+    });
+    expect(await backend.run('do something', project, () => undefined)).toMatchObject({
+      ok: false,
+      message: expect.stringContaining('tampered') as string,
+    });
+    expect(backend.hasPending()).toBe(false);
   });
 
   it('discard removes the worktree and the branch', async () => {

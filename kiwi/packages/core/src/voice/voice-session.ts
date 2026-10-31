@@ -62,6 +62,11 @@ export class VoiceSession {
     return this.finishCapture(false);
   }
 
+  /** Says a test line aloud regardless of the speak-replies setting. */
+  speakTest(text: string): void {
+    this.replies.speakNow(text);
+  }
+
   stopAll(): void {
     this.replies.cancel();
     void this.finishCapture(true);

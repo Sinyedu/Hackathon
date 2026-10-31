@@ -4,6 +4,7 @@ export interface Recording {
   events: CodingEvent[];
   result: CodingResult;
   diff: string;
+  testResult: string;
 }
 
 /** Plays a recorded run for rehearsal and offline demos. Always labelled "replay". */
@@ -33,6 +34,10 @@ export class ReplayBackend implements CodingBackendPort {
 
   diff(): Promise<string> {
     return Promise.resolve(this.recording.diff);
+  }
+
+  runTests(): Promise<string> {
+    return Promise.resolve(this.recording.testResult);
   }
 
   keep(): Promise<Fallible<{ message: string }>> {

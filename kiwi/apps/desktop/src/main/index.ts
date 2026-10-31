@@ -1,6 +1,7 @@
 import { app, globalShortcut } from 'electron';
 import { createAgentHost } from './agent-host';
 import { createOllamaClient } from './adapters/ollama-client';
+import { createSystemSpeech } from './adapters/system-speech';
 import { defaultSandboxRoot } from './adapters/sandbox-notes';
 import { seedDemoDownloads } from './adapters/sandbox-files';
 import { registerIpc, stopAll } from './ipc';
@@ -42,15 +43,17 @@ function start(): void {
     registerShortcuts(settings, { togglePanel: () => controller.togglePanel(), talk });
   const voice = createVoiceHost(createVoiceWindow(), settings, shortcuts);
   voice.configureWhenReady();
+  const speech = createSystemSpeech();
   registerIpc(
     controller,
     host,
     voice,
     createSetupHost(llm, () => settings.ollamaUrl),
+    speech,
   );
 
   shortcuts();
-  createTray(controller, () => stopAll(host, voice));
+  createTray(controller, () => stopAll(host, voice, speech));
   void seedDemoDownloads(settings.sandboxPath ?? defaultSandboxRoot()).catch((error: unknown) =>
     log.error('Could not seed demo files', error),
   );

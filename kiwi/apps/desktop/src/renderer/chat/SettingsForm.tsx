@@ -54,6 +54,13 @@ function VoiceSection({
         />
         Speak replies
       </label>
+      <button
+        className="btn btn--ghost btn--small"
+        type="button"
+        onClick={() => window.kiwi.voice.test()}
+      >
+        Test voice
+      </button>
       <label>
         Microphone
         <select

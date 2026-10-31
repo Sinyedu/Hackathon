@@ -57,6 +57,14 @@ export class SpokenReplies {
     }
   }
 
+  /** Speaks a line right away, outside any agent run (used by the voice test button). */
+  speakNow(text: string): void {
+    this.active = true;
+    this.submittedAt = this.deps.now();
+    this.say(text, true);
+    this.active = false;
+  }
+
   cancel(): void {
     this.queue = [];
     this.text.clear();
@@ -65,8 +73,8 @@ export class SpokenReplies {
     if (this.speaking) this.finish();
   }
 
-  private say(reply: string): void {
-    if (!this.active || !this.deps.enabled() || !this.deps.tts.isAvailable()) return;
+  private say(reply: string, force = false): void {
+    if (!this.active || !(force || this.deps.enabled()) || !this.deps.tts.isAvailable()) return;
     this.queue.push(...splitSentences(reply));
     if (!this.speaking) this.next();
   }

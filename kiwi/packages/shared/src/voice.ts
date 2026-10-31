@@ -41,6 +41,7 @@ export const voiceCommandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('captureStart'), via: z.enum(['push', 'tap']) }),
   z.object({ type: z.literal('captureEnd') }),
   z.object({ type: z.literal('stopAll') }),
+  z.object({ type: z.literal('speakTest') }),
   z.object({
     type: z.literal('configure'),
     wakeWord: z.boolean(),

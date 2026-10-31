@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { CodingBackendPort, ToolServices } from '../services';
 import { defineTool, type ToolContext, type ToolOutcome } from './types';
 
 const DISABLED =
@@ -13,6 +14,17 @@ function resolveProject(requested: string | undefined, projects: string[]): stri
       (path) => path.toLowerCase() === wanted || path.toLowerCase().endsWith(`/${wanted}`),
     ) ?? null
   );
+}
+
+/** Running tests executes code from the agent's changes, so it needs its own explicit Yes. */
+async function maybeRunTests(services: ToolServices, code: CodingBackendPort): Promise<string> {
+  const line = `Run "${services.codeConfig.testCommand}" in the isolated branch? It executes code from the changes.`;
+  const id = services.newId();
+  services.emit({ type: 'receipt', id, status: 'PLANNED', text: line });
+  services.emit({ type: 'confirmationRequested', id, lines: [line] });
+  const accepted = await services.confirm.confirm({ id, lines: [line] });
+  services.emit({ type: 'confirmationResolved', id, accepted });
+  return accepted ? code.runTests() : 'not run';
 }
 
 export const delegateCode = defineTool({
@@ -50,10 +62,11 @@ export const delegateCode = defineTool({
       }),
     );
     if (!result.ok) return { ok: false, message: result.message };
+    const tests = await maybeRunTests(services, code);
     return {
       ok: true,
       summary: `Coding task finished (${code.label})`,
-      receipts: [`Changes: ${result.diffSummary}`, `Tests: ${result.testResult}`],
+      receipts: [`Changes: ${result.diffSummary}`, `Tests: ${tests}`],
       say: `${result.summary} Say keep, show diff or discard.`,
     };
   },

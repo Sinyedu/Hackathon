@@ -24,6 +24,10 @@ export const ipcChannels = {
   voiceCommand: 'kiwi:voice:command',
   voicePushStart: 'kiwi:voice:push-start',
   voicePushEnd: 'kiwi:voice:push-end',
+  voiceSpeak: 'kiwi:voice:speak',
+  voiceSpeakCancel: 'kiwi:voice:speak-cancel',
+  voiceSpeechAvailable: 'kiwi:voice:speech-available',
+  voiceTest: 'kiwi:voice:test',
   stopAll: 'kiwi:stop-all',
   settingsGet: 'kiwi:settings:get',
   settingsUpdate: 'kiwi:settings:update',
@@ -38,6 +42,7 @@ export const setInteractiveSchema = z.object({ interactive: z.boolean() });
 export const dragMoveSchema = z.object({ dx: z.number(), dy: z.number() });
 
 export const chatSendSchema = z.object({ text: z.string().trim().min(1).max(2000) });
+export const speakSchema = z.object({ text: z.string().min(1).max(600) });
 export const chatConfirmSchema = z.object({ id: z.string(), accepted: z.boolean() });
 
 export const settingsPatchSchema = editableSettingsSchema.partial();
@@ -73,6 +78,12 @@ export interface KiwiApi {
     onCommand(handler: (command: VoiceCommand) => void): () => void;
     pushStart(): void;
     pushEnd(): void;
+    /** System speech through the main process; resolves when the sentence has finished. */
+    speak(text: string): Promise<void>;
+    cancelSpeech(): void;
+    speechAvailable(): Promise<boolean>;
+    /** Makes Kiwi say a short test sentence. */
+    test(): void;
   };
   settings: {
     get(): Promise<EditableSettings>;

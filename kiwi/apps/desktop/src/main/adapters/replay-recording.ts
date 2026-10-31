@@ -6,7 +6,7 @@ export const demoRecording: Recording = {
   result: {
     summary: 'Added a friendly greeting to greet().',
     diffSummary: '1 file changed, 4 insertions(+)',
-    testResult: 'passed',
   },
+  testResult: 'passed',
   diff: '--- a/src/greet.ts\n+++ b/src/greet.ts\n@@\n-export const greet = (name: string) => name;\n+export const greet = (name: string) => `Hello, ${name}!`;\n',
 };

@@ -144,7 +144,8 @@ describe('info tools', () => {
 describe('delegate_code', () => {
   const recording = {
     events: [{ text: 'Reading files' }, { text: 'Editing greet.ts' }],
-    result: { summary: 'Added a greeting.', diffSummary: '1 file changed', testResult: 'passed' },
+    result: { summary: 'Added a greeting.', diffSummary: '1 file changed' },
+    testResult: 'passed',
     diff: '+hello',
   };
   const enabled = (): {
@@ -171,6 +172,16 @@ describe('delegate_code', () => {
     expect(said(events).at(-1)).toBe('+hello');
     await agent.run('keep it');
     expect(receipts(events).at(-1)).toBe('DONE:Replay only: nothing was merged.');
+  });
+
+  it('asks separately before running tests and skips them on No', async () => {
+    let asked = 0;
+    const confirm = { confirm: () => Promise.resolve(++asked === 1) };
+    const { agent, events } = createTestAgent({ services: enabled(), confirm });
+    await agent.run('delegate add a greeting function');
+    expect(asked).toBe(2);
+    expect(receipts(events)).toContain('DONE:Tests: not run');
+    expect(receipts(events).some((r) => r.startsWith('PLANNED:Run "npm test"'))).toBe(true);
   });
 
   it('discard clears the pending result', async () => {
