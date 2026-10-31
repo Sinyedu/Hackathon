@@ -6,7 +6,7 @@ AI-powered delivery reconciliation. DockProof compares a purchase order, deliver
 uses a small local open-weight model (Qwen3 1.7B via Ollama) to match differently named products,
 and uses deterministic code for quantities, prices, discrepancies and claims. Claims require human approval.
 
-> Status: scaffold plus working OCR extraction (`services/extract.py`) and AI product matching (`services/match.py`). Upload API, reconciliation, claims and UI are still stubs; see `docs/MAP.md`.
+> Status: working end to end: scan or upload, OCR, AI product matching, reconciliation, claims, correction and approval, plus **AutoRecover** (shortage recovery plans and draft replacement orders). See `docs/MAP.md`.
 > See `AGENTS.md`, `CLAUDE.md` and `DESCRIPTION.md` for scope and rules.
 
 ## Stack
@@ -67,6 +67,18 @@ The backend never downloads the model or runs inference at startup.
 | Frontend lint | `cd frontend && pnpm lint` |
 
 See `docs/DEPLOY.md` for phone access and the Vercel + tunnel deployment, and `docs/CI-CD.md` for the GitHub Actions pipeline.
+
+## AutoRecover demo (about 60 seconds)
+
+Needs the backend, frontend and Ollama running (`ollama list` shows `qwen3:1.7b`).
+
+1. Open the app and click **Try the demo scenario: Missing Tomatoes**. The real OCR/matching/reconciliation runs on the synthetic fixture scans: 24 cases ordered, 18 delivered.
+2. On the shortage card (-6 cases) click **Find Recovery Options**. AutoRecover searches the seeded suppliers and shows ranked options with costs, lead times and reasons. Toggle **Cheapest first / Fastest first** to see the ranking change.
+3. Click **Create Replacement Order** on an option, then **Approve draft** (an AI-assessed substitute needs the confirmation box ticked first).
+4. Reload the page: the order status is still there (persisted in SQLite).
+
+Suppliers are loaded from `fixtures/suppliers.json` at backend startup. The seed is idempotent and never overwrites existing rows; to re-seed manually run `cd backend && PYTHONPATH=. python -c "from app.services.suppliers import seed_suppliers; print(seed_suppliers())"`.
+New endpoints: `GET /api/suppliers`, `POST /api/reconciliations/{id}/discrepancies/{item}/recover`, `GET .../recovery`, `POST /api/recovery-plans/{id}/draft-order`, `POST /api/replacement-orders/{id}/approve|reject`, `POST /api/demo/missing-tomatoes`.
 
 ## URLs
 

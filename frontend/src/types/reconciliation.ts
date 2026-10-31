@@ -10,6 +10,9 @@ export interface CatalogItem {
   id: string
   description: string
   unit: string
+  category?: string | null
+  pack_size?: string | null
+  pack_unit?: string | null
 }
 
 export interface Document {

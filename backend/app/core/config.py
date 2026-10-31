@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     ollama_model: str = "qwen3:1.7b"
     database_url: str = "sqlite:///./dockproof.db"
     uploads_dir: str = "./uploads"
+    suppliers_path: str = str(Path(__file__).resolve().parents[3] / "fixtures" / "suppliers.json")
     catalog_path: str = str(Path(__file__).resolve().parents[3] / "fixtures" / "catalog.json")
     # Comma-separated exact origins allowed to call the API (e.g. your Vercel URL).
     cors_origins: str = "http://localhost:5173"

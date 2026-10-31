@@ -22,3 +22,12 @@ def client(db, tmp_path, monkeypatch):
     get_settings.cache_clear()
     yield TestClient(app)
     get_settings.cache_clear()
+
+
+@pytest.fixture
+def seeded(client):
+    """Client whose database already holds the synthetic suppliers."""
+    from app.services.suppliers import seed_suppliers
+
+    seed_suppliers()
+    return client

@@ -1,0 +1,25 @@
+{
+  "_note": "Synthetic demo suppliers. Prices, stock and lead times are invented, not real offers.",
+  "suppliers": [
+    {"id": "nordic-fresh", "name": "Nordic Fresh", "products": [
+      {"id": "NF-TOM-5", "description": "Tomatoes, 5 kg case", "category": "produce", "sale_unit": "case", "pack_size": "5", "pack_unit": "kg", "unit_price": "95", "currency": "DKK", "available_qty": "20", "lead_time_days": 1, "available": true},
+      {"id": "NF-CHT-5", "description": "Cherry tomatoes, 5 kg case", "category": "produce", "sale_unit": "case", "pack_size": "5", "pack_unit": "kg", "unit_price": "130", "currency": "DKK", "available_qty": "12", "lead_time_days": 1, "available": true}
+    ]},
+    {"id": "greensupply", "name": "GreenSupply", "products": [
+      {"id": "GS-TOM-5", "description": "Tomato Box 5KG", "category": "produce", "sale_unit": "box", "pack_size": "5", "pack_unit": "kg", "unit_price": "102", "currency": "DKK", "available_qty": "40", "lead_time_days": 0, "available": true}
+    ]},
+    {"id": "farmdirect", "name": "FarmDirect", "products": [
+      {"id": "FD-TOM-10", "description": "Fresh Tomatoes, 10 kg box", "category": "produce", "sale_unit": "box", "pack_size": "10", "pack_unit": "kg", "unit_price": "180", "currency": "DKK", "available_qty": "15", "lead_time_days": 2, "available": true}
+    ]},
+    {"id": "budget-foods", "name": "Budget Foods", "products": [
+      {"id": "BF-POT-5", "description": "Potatoes, 5 kg case", "category": "produce", "sale_unit": "case", "pack_size": "5", "pack_unit": "kg", "unit_price": "65", "currency": "DKK", "available_qty": "50", "lead_time_days": 1, "available": true},
+      {"id": "BF-TOM-TRAY", "description": "Tomatoes, tray of 24 pieces", "category": "produce", "sale_unit": "tray", "pack_size": "24", "pack_unit": "pcs", "unit_price": "70", "currency": "DKK", "available_qty": "30", "lead_time_days": 1, "available": true}
+    ]},
+    {"id": "bulk-wholesale", "name": "Bulk Wholesale", "products": [
+      {"id": "BW-TOM-5", "description": "Tomatoes, case 5 kg", "category": "produce", "sale_unit": "case", "pack_size": "5", "pack_unit": "kg", "unit_price": "88", "currency": "DKK", "available_qty": "4", "lead_time_days": 1, "available": true}
+    ]},
+    {"id": "slowco", "name": "SlowCo Produce", "products": [
+      {"id": "SC-TOM-5", "description": "Tomatoes, 5 kg case", "category": "produce", "sale_unit": "case", "pack_size": "5", "pack_unit": "kg", "unit_price": "79", "currency": "DKK", "available_qty": "100", "lead_time_days": 3, "available": false}
+    ]}
+  ]
+}
