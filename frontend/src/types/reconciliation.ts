@@ -3,7 +3,7 @@
 
 export type DocumentKind = 'purchase_order' | 'delivery_note' | 'invoice'
 export type MatchStatus = 'matched' | 'needs_review' | 'unmatched'
-export type MatchMethod = 'exact' | 'fuzzy' | 'model' | 'manual'
+export type MatchMethod = 'exact' | 'fuzzy' | 'model' | 'manual' | 'learned'
 export type ClaimStatus = 'draft' | 'approved'
 
 export interface CatalogItem {
@@ -31,6 +31,7 @@ export interface LineItem {
   unit: string
   unit_price: string | null
   page: number | null
+  bbox: [number, number, number, number] | null
   corrected: boolean
 }
 

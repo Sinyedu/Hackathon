@@ -10,11 +10,11 @@ import ReplacementOrderCard from './ReplacementOrderCard'
 interface Props {
   reconciliationId: string
   itemId: string
-  title: string
-  documents: Document[]
+  title?: string
+  documents?: Document[]
 }
 
-export default function RecoveryPanel({ reconciliationId, itemId, title, documents }: Props) {
+export default function RecoveryPanel({ reconciliationId, itemId, title = 'Recovery options', documents = [] }: Props) {
   const { plan, loaded, busy, error, find, createOrder, decide } = useRecovery(reconciliationId, itemId)
   const [priority, setPriority] = useState<Priority>('cost')
   if (!loaded) return null

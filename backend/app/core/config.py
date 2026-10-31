@@ -9,8 +9,6 @@ class Settings(BaseSettings):
 
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "qwen3:1.7b"
-    database_url: str = "sqlite:///./dockproof.db"
-    uploads_dir: str = "./uploads"
     # Speech-to-text (open-weight Whisper via faster-whisper). Use "base" for multilingual.
     whisper_model: str = "base.en"
     whisper_language: str = "en"

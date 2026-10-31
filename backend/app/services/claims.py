@@ -1,8 +1,4 @@
-"""Owner: backend. Draft claims and explicit approval, persisted to SQLite.
-
-A claim is only reported as created or approved after its transaction has committed; the returned
-object is re-read from the database, never built from in-memory state.
-"""
+"""Draft claims and explicit approval in process-local session state."""
 
 import uuid
 

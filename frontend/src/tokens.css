@@ -1,0 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+:root {
+  --paper: #fff;
+  --desk: #f3f4f6;
+  --ink: #0b0d12;
+  --ink-2: #4b5160;
+  --rule: #e3e5ea;
+  --cobalt: #2340ff;
+  --cobalt-tint: #eef1ff;
+  --tomato: #e5372b;
+  --tomato-tint: #fdecea;
+  --font-ui: 'Inter Tight', 'Arial Narrow', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}

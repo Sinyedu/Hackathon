@@ -78,5 +78,37 @@
     "category": "eggs",
     "pack_size": "30",
     "pack_unit": "pcs"
+  },
+  {
+    "id": "P011",
+    "description": "Cucumbers, case 5 kg",
+    "unit": "case",
+    "category": "produce",
+    "pack_size": "5",
+    "pack_unit": "kg"
+  },
+  {
+    "id": "P012",
+    "description": "Red Onions, case 10 kg",
+    "unit": "case",
+    "category": "produce",
+    "pack_size": "10",
+    "pack_unit": "kg"
+  },
+  {
+    "id": "P013",
+    "description": "Olive Oil Extra Virgin 1 L",
+    "unit": "bottle",
+    "category": "pantry",
+    "pack_size": "1",
+    "pack_unit": "l"
+  },
+  {
+    "id": "P014",
+    "description": "Mozzarella 125 g pack",
+    "unit": "pack",
+    "category": "dairy",
+    "pack_size": "0.125",
+    "pack_unit": "kg"
   }
 ]

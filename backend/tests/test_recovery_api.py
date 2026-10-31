@@ -2,8 +2,8 @@ from decimal import Decimal
 
 from helpers import CHERRY_OK, model_down, model_router, upload
 
-from app.core.db import connect
-from app.services import suppliers
+from app.services import store, suppliers
+from app.schemas.recovery import SupplierProduct
 
 ITEM = "P001"
 
@@ -90,8 +90,7 @@ def test_ollama_unavailable_still_returns_deterministic_options(seeded, monkeypa
 
 def test_no_feasible_recovery_gives_a_clear_explanation(seeded, monkeypatch) -> None:
     rid = shortage(seeded, monkeypatch)
-    with connect() as conn:
-        conn.execute("DELETE FROM supplier_products")
+    store.state.supplier_products.clear()
     plan = recover(seeded, rid).json()
     assert plan["options"] == [] and plan["recommended_option_id"] is None
     assert any("No compatible supplier product" in w for w in plan["warnings"])
@@ -100,8 +99,7 @@ def test_no_feasible_recovery_gives_a_clear_explanation(seeded, monkeypatch) -> 
 
 def test_partial_only_plan_has_no_recommendation(seeded, monkeypatch) -> None:
     rid = shortage(seeded, monkeypatch)
-    with connect() as conn:
-        conn.execute("DELETE FROM supplier_products WHERE id != 'BW-TOM-5'")
+    store.state.supplier_products = {key: value for key, value in store.state.supplier_products.items() if key == "BW-TOM-5"}
     plan = recover(seeded, rid).json()
     assert plan["recommended_option_id"] is None and any("No single supplier" in w for w in plan["warnings"])
     res = seeded.post(f"/api/recovery-plans/{plan['id']}/draft-order", json={"option_id": "BW-TOM-5"})
@@ -132,8 +130,7 @@ def test_duplicate_requests_do_not_create_duplicate_orders(seeded, monkeypatch) 
     assert seeded.post(url, json={"option_id": "NF-TOM-5"}).json()["id"] == first["id"]
     other = seeded.post(url, json={"option_id": "GS-TOM-5"})
     assert other.status_code == 409 and "already has a draft order" in other.json()["detail"]
-    with connect() as conn:
-        assert conn.execute("SELECT COUNT(*) FROM replacement_orders").fetchone()[0] == 1
+    assert len(store.state.replacement_orders) == 1
 
 
 def test_rejecting_frees_the_plan_for_another_order(seeded, monkeypatch) -> None:
@@ -177,8 +174,9 @@ def test_recovery_is_refused_for_non_shortages_and_unknown_ids(seeded, monkeypat
 def test_suppliers_endpoint_and_idempotent_seed(seeded) -> None:
     names = [s["name"] for s in seeded.get("/api/suppliers").json()]
     assert "Nordic Fresh" in names and "GreenSupply" in names
-    with connect() as conn:
-        conn.execute("UPDATE supplier_products SET unit_price = '999' WHERE id = 'NF-TOM-5'")
+    product = SupplierProduct.model_validate_json(store.state.supplier_products["NF-TOM-5"])
+    product.unit_price = Decimal("999")
+    store.state.supplier_products["NF-TOM-5"] = product.model_dump_json()
     assert suppliers.seed_suppliers() == 0  # existing rows are never overwritten
     nordic = next(s for s in seeded.get("/api/suppliers").json() if s["id"] == "nordic-fresh")
     assert next(p for p in nordic["products"] if p["id"] == "NF-TOM-5")["unit_price"] == "999"

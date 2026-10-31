@@ -3,13 +3,11 @@
 import io
 import uuid
 from dataclasses import dataclass
-from pathlib import Path
 
 from PIL import Image
 from starlette.concurrency import run_in_threadpool
 
-from app.core.config import get_settings
-from app.schemas.domain import Document, DocumentKind, LineItem, Match, MatchStatus, Reconciliation
+from app.schemas.domain import Document, DocumentKind, LineItem, Match, MatchMethod, MatchStatus, Reconciliation
 from app.services import claims, store
 from app.services.catalog import load_catalog
 from app.services.extract import extract_line_items
@@ -31,18 +29,15 @@ def media_type(content: bytes) -> str:
     return Image.MIME.get(fmt, "application/octet-stream")
 
 
-def upload_path(reconciliation_id: str, document_id: str) -> Path:
-    return Path(get_settings().uploads_dir) / reconciliation_id / document_id
-
-
 def _save_upload(reconciliation_id: str, document_id: str, content: bytes) -> None:
-    path = upload_path(reconciliation_id, document_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(content)
+    store.state.uploads[(reconciliation_id, document_id)] = content
 
 
 async def run_reconciliation(purchase_order: Upload, delivery_note: Upload,
-                             invoice: Upload | None = None) -> Reconciliation:
+                             invoice: Upload | None = None,
+                             aliases: dict[str, str] | None = None,
+                             rejected: list[list[str]] | None = None,
+                             require_model_review: bool = False) -> Reconciliation:
     """Raises ExtractionError (unreadable file) before anything is persisted."""
     rid = f"R-{uuid.uuid4().hex[:10]}"
     uploads = [u for u in (purchase_order, delivery_note, invoice) if u is not None]
@@ -57,7 +52,20 @@ async def run_reconciliation(purchase_order: Upload, delivery_note: Upload,
 
     catalog = load_catalog()
     ordered, delivered = lines[DocumentKind.PURCHASE_ORDER], lines[DocumentKind.DELIVERY_NOTE]
-    matches: list[Match] = [await match_line(line, catalog) for line in ordered + delivered]
+    matches: list[Match] = []
+    for line in ordered + delivered:
+        alias = (aliases or {}).get(line.description)
+        if alias and any(c.id == alias and c.unit == line.unit for c in catalog):
+            match = Match(source_line_id=line.id, catalog_item_id=alias,
+                          method=MatchMethod.LEARNED, status=MatchStatus.MATCHED)
+        else:
+            match = await match_line(line, catalog)
+            if match.catalog_item_id and [line.description, match.catalog_item_id] in (rejected or []):
+                match = Match(source_line_id=line.id, catalog_item_id=None,
+                              method=match.method, status=MatchStatus.UNMATCHED)
+            elif require_model_review and match.method == MatchMethod.MODEL and match.catalog_item_id:
+                match.status = MatchStatus.NEEDS_REVIEW
+        matches.append(match)
     result = compute_discrepancies(ordered, delivered, matches, catalog)
 
     warnings = list(result.warnings)

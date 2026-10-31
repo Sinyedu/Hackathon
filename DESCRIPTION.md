@@ -29,7 +29,7 @@ Supplier product names are inconsistent. A strict string comparison cannot relia
 ## MVP technology
 - **Frontend:** React, Vite, TypeScript, pnpm, native `fetch`.
 - **Backend:** Python, FastAPI, Pydantic.
-- **Storage:** SQLite.
+- **Storage:** Process-local memory, cleared when the backend restarts.
 - **Scan reading:** local OCR (RapidOCR) for photos and screenshots; PyMuPDF for text-based PDFs. Numbers come from OCR text, never from the model.
 - **Devices:** responsive web app; phone camera via native file capture on the local network.
 - **Matching:** normalization, RapidFuzz, and Ollama with **Qwen3 1.7B** (small open-weight model, Apache 2.0 model-family license; check the specific model distribution before redistribution).
@@ -87,7 +87,7 @@ The model never supplies suppliers, products, prices, quantities, lead times or 
 Complete fulfilment first, then verified compatibility before AI-assessed substitutes, then the user's priority (**cheapest first** by default, or **fastest first**), then supplier name. Each option lists the factual reasons for its position (for example "Lowest total cost among complete options (540.00 DKK)").
 
 ### Supplier catalog
-Synthetic suppliers in `fixtures/suppliers.json`, loaded into SQLite (`suppliers`, `supplier_products`) by an idempotent seed that never overwrites existing rows. It runs at backend startup. Each product has supplier, description, category, sale unit, package size and unit, unit price and currency (DKK), available quantity, lead time and an availability flag. The demo data covers exact matches, a repackaged option, an ambiguous variant, a different product, a pieces-based package (rejected, no conversion), partial stock and an unavailable supplier. Prices and stock are invented, not real offers.
+Synthetic suppliers in `fixtures/suppliers.json` are loaded into process-local memory by an idempotent seed. It runs at backend startup. Each product has supplier, description, category, sale unit, package size and unit, unit price and currency (DKK), available quantity, lead time and an availability flag. The demo data covers exact matches, a repackaged option, an ambiguous variant, a different product, a pieces-based package (rejected, no conversion), partial stock and an unavailable supplier. Prices and stock are invented, not real offers.
 
 ### Human approval and safeguards
 - Replacement orders start as **draft**; at most one live (draft or approved) order exists per recovery plan, and repeated requests return the same order.

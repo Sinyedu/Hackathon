@@ -12,7 +12,7 @@ and uses deterministic code for quantities, prices, discrepancies and claims. Cl
 ## Stack
 
 - Frontend: React + TypeScript + Vite + Tailwind CSS v4, pnpm, native `fetch`
-- Backend: Python 3.11+ / FastAPI / Pydantic / SQLite
+- Backend: Python 3.11+ / FastAPI / Pydantic / process-local memory
 - Scan reading: RapidOCR (ONNX, installed via pip) for photos/screenshots; PyMuPDF for text PDFs
 - AI: `qwen3:1.7b` (Apache 2.0) through Ollama, called with `httpx`
 
@@ -36,13 +36,13 @@ cd backend
 python3 -m venv .venv && source .venv/bin/activate
 python -m pip install -r requirements.txt
 cp .env.example .env
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 # Frontend (terminal 2)
 cd frontend
-pnpm install
+corepack pnpm install
 cp .env.example .env
-pnpm dev
+corepack pnpm dev --host 0.0.0.0
 ```
 
 ## Ollama
@@ -54,7 +54,7 @@ ollama pull qwen3:1.7b   # ~1.4 GB download
 ollama run qwen3:1.7b    # optional interactive smoke test
 ```
 
-The backend never downloads the model or runs inference at startup.
+The backend never downloads the model or runs inference at startup. If Ollama is unavailable, uncertain matches remain for human review.
 
 ## Development commands
 
@@ -68,16 +68,15 @@ The backend never downloads the model or runs inference at startup.
 
 See `docs/DEPLOY.md` for phone access and the Vercel + tunnel deployment, and `docs/CI-CD.md` for the GitHub Actions pipeline.
 
-## AutoRecover demo (about 60 seconds)
+## Live dock demo
 
-Needs the backend, frontend and Ollama running (`ollama list` shows `qwen3:1.7b`).
+Open <http://localhost:5173> on the laptop. The office screen shows a QR link for a phone on the same Wi-Fi or hotspot. Scan it to open `/dock` on the phone. Use **Chaos Dock** to generate synthetic purchase orders and delivery notes, or upload scans directly. The watcher reads generated pairs from `dock-inbox/` through the same OCR pipeline. Review a shortage, open its proof, and approve the draft claim only after checking it. **Reveal answer key** compares the result with the synthetic key after processing.
 
-1. Open the app and click **Try the demo scenario: Missing Tomatoes**. The real OCR/matching/reconciliation runs on the synthetic fixture scans: 24 cases ordered, 18 delivered.
-2. On the shortage card (-6 cases) click **Find Recovery Options**. AutoRecover searches the seeded suppliers and shows ranked options with costs, lead times and reasons. Toggle **Cheapest first / Fastest first** to see the ranking change.
-3. Click **Create Replacement Order** on an option, then **Approve draft** (an AI-assessed substitute needs the confirmation box ticked first).
-4. Reload the page: the order status is still there (persisted in SQLite).
+For **AutoRecover**, expand a shortage on the office result, click **Find Recovery Options**, then create a draft replacement order. Approval records a local decision; nothing is sent to a supplier.
 
-Suppliers are loaded from `fixtures/suppliers.json` at backend startup. The seed is idempotent and never overwrites existing rows; to re-seed manually run `cd backend && PYTHONPATH=. python -c "from app.services.suppliers import seed_suppliers; print(seed_suppliers())"`.
+State lives in the backend process and is cleared when it restarts. The frontend stores the session ID in localStorage so refreshes reconnect while the backend stays running.
+
+Suppliers are loaded from `fixtures/suppliers.json` into memory at backend startup. The seed is idempotent within a running process; to re-seed manually run `cd backend && PYTHONPATH=. python -c "from app.services.suppliers import seed_suppliers; print(seed_suppliers())"`.
 New endpoints: `GET /api/suppliers`, `POST /api/reconciliations/{id}/discrepancies/{item}/recover`, `GET .../recovery`, `POST /api/recovery-plans/{id}/draft-order`, `POST /api/replacement-orders/{id}/approve|reject`, `POST /api/demo/missing-tomatoes`.
 
 ## Ask by voice (assistant)
@@ -96,7 +95,6 @@ Endpoints: `POST /api/voice/transcribe`, `POST /api/reconciliations/{id}/ask`.
 |---|---|---|
 | `backend/.env` | `OLLAMA_BASE_URL` | `http://localhost:11434` |
 | `backend/.env` | `OLLAMA_MODEL` | `qwen3:1.7b` |
-| `backend/.env` | `DATABASE_URL` | `sqlite:///./dockproof.db` |
 | `backend/.env` | `CORS_ORIGINS` | `http://localhost:5173` |
 | `backend/.env` | `CORS_ORIGIN_REGEX` | private-LAN dev origins |
 | `frontend/.env` | `VITE_API_URL` | unset = same host as the page, port 8000 |

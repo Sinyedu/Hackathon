@@ -23,12 +23,12 @@ Extra route: `GET /api/reconciliations/{id}/documents/{document_id}/file` serves
 | `services/claims.py` | draft/approve claim; approval refused unless status `ready` | backend | done |
 | `services/store.py` | save/load Reconciliation JSON, transactions, audit log | backend | done |
 | `services/ollama.py` | async Ollama client | AI | done |
-| `core/db.py` | sqlite3 + schema (`init_db`, run at app startup) | backend | done |
+| `services/store.py` | process-local session and reconciliation state | backend | done |
 | `frontend/src/pages/ScanPage.tsx`, `ReviewPage.tsx` | scan (camera/file) -> review beside scan, correct lines/products, approve; route is `#/r/<id>` | frontend | done |
 | `api/catalog.py` | `GET /api/catalog` for the manual-match dropdown | backend | done |
 | `api/reconciliations.py` | HTTP orchestration: create / get / approve / original scan file, `POST /{id}/corrections` | backend | done |
 | `services/corrections.py` | user fixes OCR digits / picks products; re-reconciles, replaces or removes the draft claim, audits; refused after approval | backend | done |
-| `services/suppliers.py` | supplier catalog in SQLite, idempotent seed from `fixtures/suppliers.json` | backend | done |
+| `services/suppliers.py` | supplier catalog in memory, idempotent seed from `fixtures/suppliers.json` | backend | done |
 | `services/compat.py` | AutoRecover: rule-based product compatibility, Qwen only for ambiguous candidates | AI | done |
 | `services/recovery_engine.py` | pure Decimal package/cost maths and transparent ranking | backend | done |
 | `services/recovery.py` | shortage -> options -> persisted recovery plan | backend | done |

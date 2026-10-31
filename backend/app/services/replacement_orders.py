@@ -1,10 +1,9 @@
-"""Owner: backend. Draft replacement orders and internal approve/reject.
+"""Draft replacement orders and internal approve/reject.
 
 Nothing here contacts a supplier, sends an email, or changes inventory: approval only records a
-status in SQLite. At most one live (draft/approved) order exists per recovery plan.
+status in process-local memory. At most one live (draft/approved) order exists per recovery plan.
 """
 
-import sqlite3
 import uuid
 
 from app.schemas.recovery import OrderStatus, RecoveryPlan, ReplacementOrder
@@ -27,10 +26,10 @@ class OrderInvalid(OrderError):
     pass
 
 
-def _live_order(conn: sqlite3.Connection, plan_id: str) -> ReplacementOrder | None:
-    row = conn.execute("SELECT payload FROM replacement_orders WHERE plan_id = ? "
-                       "AND status IN ('draft', 'approved')", (plan_id,)).fetchone()
-    return ReplacementOrder.model_validate_json(row["payload"]) if row else None
+def _live_order(state: store.SessionStore, plan_id: str) -> ReplacementOrder | None:
+    return next((order for payload in state.replacement_orders.values()
+                 if (order := ReplacementOrder.model_validate_json(payload)).plan_id == plan_id and
+                 order.status in {OrderStatus.DRAFT, OrderStatus.APPROVED}), None)
 
 
 def _warning(option) -> str | None:
@@ -51,8 +50,8 @@ def create_draft_order(plan_id: str, option_id: str) -> ReplacementOrder:
         raise OrderInvalid("Unknown recovery option")
     if not option.fulfills_shortage:
         raise OrderInvalid("This option cannot cover the full shortage")
-    with store.transaction() as conn:
-        live = _live_order(conn, plan_id)
+    with store.transaction() as state:
+        live = _live_order(state, plan_id)
         if live is not None:
             if live.option.option_id == option_id:
                 return live
@@ -65,28 +64,25 @@ def create_draft_order(plan_id: str, option_id: str) -> ReplacementOrder:
             total_estimated_cost=option.total_cost, currency=option.currency,
             lead_time_days=option.lead_time_days, warning=_warning(option),
             requires_confirmation=option.requires_confirmation, created_at=store.now())
-        conn.execute("INSERT INTO replacement_orders (id, plan_id, status, payload, created_at) "
-                     "VALUES (?, ?, ?, ?, ?)", (order.id, plan_id, order.status.value,
-                                                 order.model_dump_json(), order.created_at.isoformat()))
-        store.audit(conn, plan.reconciliation_id, "replacement_order_drafted", order.id)
+        state.replacement_orders[order.id] = order.model_dump_json()
+        store.audit(state, plan.reconciliation_id, "replacement_order_drafted", order.id)
         return order
 
 
 def _decide(order_id: str, status: OrderStatus, confirm: bool = False) -> ReplacementOrder:
-    with store.transaction() as conn:
-        row = conn.execute("SELECT payload FROM replacement_orders WHERE id = ?", (order_id,)).fetchone()
-        if row is None:
+    with store.transaction() as state:
+        payload = state.replacement_orders.get(order_id)
+        if payload is None:
             raise OrderNotFound("Replacement order not found")
-        order = ReplacementOrder.model_validate_json(row["payload"])
+        order = ReplacementOrder.model_validate_json(payload)
         if order.status != OrderStatus.DRAFT:
             raise OrderConflict(f"Order is already {order.status.value}")
         if status == OrderStatus.APPROVED and order.requires_confirmation and not confirm:
             raise OrderInvalid("This is an AI-assessed substitute; explicit confirmation is required")
         order.status, order.decided_at = status, store.now()
         order.substitution_confirmed = confirm and order.requires_confirmation and status == OrderStatus.APPROVED
-        conn.execute("UPDATE replacement_orders SET status = ?, payload = ?, decided_at = ? WHERE id = ?",
-                     (status.value, order.model_dump_json(), order.decided_at.isoformat(), order_id))
-        store.audit(conn, order.reconciliation_id, f"replacement_order_{status.value}", order_id)
+        state.replacement_orders[order_id] = order.model_dump_json()
+        store.audit(state, order.reconciliation_id, f"replacement_order_{status.value}", order_id)
         return order
 
 

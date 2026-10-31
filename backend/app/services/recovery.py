@@ -1,6 +1,5 @@
-"""Owner: backend. AutoRecover orchestration: shortage -> candidates -> options -> persisted plan."""
+"""AutoRecover orchestration: shortage, candidates, options, process-local plan."""
 
-import sqlite3
 import uuid
 
 from app.schemas.domain import CatalogItem
@@ -31,38 +30,41 @@ class RecoveryInvalid(RecoveryError):
     pass
 
 
-def _load_orders(conn: sqlite3.Connection, plan_id: str) -> list[ReplacementOrder]:
-    rows = conn.execute("SELECT payload FROM replacement_orders WHERE plan_id = ? ORDER BY created_at, id",
-                        (plan_id,)).fetchall()
-    return [ReplacementOrder.model_validate_json(r["payload"]) for r in rows]
+def _load_orders(state: store.SessionStore, plan_id: str) -> list[ReplacementOrder]:
+    orders = [ReplacementOrder.model_validate_json(payload) for payload in state.replacement_orders.values()]
+    return sorted((order for order in orders if order.plan_id == plan_id), key=lambda order: (order.created_at, order.id))
 
 
-def _plan_from_row(conn: sqlite3.Connection, row: sqlite3.Row | None) -> RecoveryPlan | None:
-    if row is None:
+def _plan_from_payload(state: store.SessionStore, payload: str | None) -> RecoveryPlan | None:
+    if payload is None:
         return None
-    plan = RecoveryPlan.model_validate_json(row["payload"])
-    plan.orders = _load_orders(conn, plan.id)
+    plan = RecoveryPlan.model_validate_json(payload)
+    plan.orders = _load_orders(state, plan.id)
     return plan
 
 
 def get_plan(plan_id: str) -> RecoveryPlan | None:
-    with store.transaction() as conn:
-        return _plan_from_row(conn, conn.execute(
-            "SELECT payload FROM recovery_plans WHERE id = ?", (plan_id,)).fetchone())
+    with store.transaction() as state:
+        return _plan_from_payload(state, state.recovery_plans.get(plan_id))
 
 
 def get_plan_for(reconciliation_id: str, catalog_item_id: str) -> RecoveryPlan | None:
-    with store.transaction() as conn:
-        return _plan_from_row(conn, conn.execute(
-            "SELECT payload FROM recovery_plans WHERE reconciliation_id = ? AND catalog_item_id = ?",
-            (reconciliation_id, catalog_item_id)).fetchone())
+    with store.transaction() as state:
+        for payload in state.recovery_plans.values():
+            plan = RecoveryPlan.model_validate_json(payload)
+            if plan.reconciliation_id == reconciliation_id and plan.catalog_item_id == catalog_item_id:
+                plan.orders = _load_orders(state, plan.id)
+                return plan
+    return None
 
 
 def get_plans_for_all(reconciliation_id: str) -> list[RecoveryPlan]:
-    with store.transaction() as conn:
-        rows = conn.execute("SELECT payload FROM recovery_plans WHERE reconciliation_id = ? ORDER BY created_at",
-                            (reconciliation_id,)).fetchall()
-        return [p for p in (_plan_from_row(conn, r) for r in rows) if p is not None]
+    with store.transaction() as state:
+        plans = [RecoveryPlan.model_validate_json(p) for p in state.recovery_plans.values()]
+        plans = [p for p in plans if p.reconciliation_id == reconciliation_id]
+        for plan in plans:
+            plan.orders = _load_orders(state, plan.id)
+        return plans
 
 
 async def _evaluate(original: CatalogItem, required) -> tuple[list[RecoveryOption], list[ExcludedCandidate], list[str]]:
@@ -131,22 +133,22 @@ async def recover(reconciliation_id: str, catalog_item_id: str, priority: Priori
     elif not ranked[0].fulfills_shortage:
         warnings.append("No single supplier can cover the full shortage")
 
-    with store.transaction() as conn:
-        existing = conn.execute("SELECT id FROM recovery_plans WHERE reconciliation_id = ? AND catalog_item_id = ?",
-                                (reconciliation_id, catalog_item_id)).fetchone()
+    with store.transaction() as state:
+        existing = None
+        for value in state.recovery_plans.values():
+            candidate = RecoveryPlan.model_validate_json(value)
+            if candidate.reconciliation_id == reconciliation_id and candidate.catalog_item_id == catalog_item_id:
+                existing = candidate
+                break
         plan = RecoveryPlan(
-            id=existing["id"] if existing else f"RP-{uuid.uuid4().hex[:10]}",
+            id=existing.id if existing else f"RP-{uuid.uuid4().hex[:10]}",
             reconciliation_id=reconciliation_id, catalog_item_id=catalog_item_id,
             description=discrepancy.description, missing_quantity=missing, unit=discrepancy.unit,
             required_amount=required, amount_unit=original.pack_unit or "", priority=priority,
             recommended_option_id=ranked[0].option_id if ranked and ranked[0].fulfills_shortage else None,
             recommendation_summary=_summary(ranked), options=ranked, excluded=excluded,
             warnings=warnings, created_at=store.now())
-        conn.execute(
-            "INSERT INTO recovery_plans (id, reconciliation_id, catalog_item_id, payload, created_at) "
-            "VALUES (?, ?, ?, ?, ?) ON CONFLICT(reconciliation_id, catalog_item_id) DO UPDATE SET "
-            "payload = excluded.payload, created_at = excluded.created_at",
-            (plan.id, reconciliation_id, catalog_item_id, plan.model_dump_json(), plan.created_at.isoformat()))
-        store.audit(conn, reconciliation_id, "recovery_planned", f"{plan.id} {priority} options={len(ranked)}")
-        plan.orders = _load_orders(conn, plan.id)
+        state.recovery_plans[plan.id] = plan.model_dump_json()
+        store.audit(state, reconciliation_id, "recovery_planned", f"{plan.id} {priority} options={len(ranked)}")
+        plan.orders = _load_orders(state, plan.id)
     return plan
