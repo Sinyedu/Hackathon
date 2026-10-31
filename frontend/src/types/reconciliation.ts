@@ -6,6 +6,12 @@ export type MatchStatus = 'matched' | 'needs_review' | 'unmatched'
 export type MatchMethod = 'exact' | 'fuzzy' | 'model' | 'manual'
 export type ClaimStatus = 'draft' | 'approved'
 
+export interface CatalogItem {
+  id: string
+  description: string
+  unit: string
+}
+
 export interface Document {
   id: string
   kind: DocumentKind

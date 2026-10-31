@@ -20,3 +20,8 @@ def test_unknown_reconciliation_404(db) -> None:
 def test_init_db(db) -> None:
     init_db()
     assert db.exists()
+
+
+def test_catalog_lists_known_products() -> None:
+    items = client.get("/api/catalog").json()
+    assert {"id": "P001", "description": "Tomatoes, case 5 kg", "unit": "case"} in items

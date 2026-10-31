@@ -1,5 +1,5 @@
 import type { HealthResponse } from '../types/health'
-import type { Corrections, Reconciliation } from '../types/reconciliation'
+import type { CatalogItem, Corrections, Reconciliation } from '../types/reconciliation'
 
 // Unset VITE_API_URL -> same host as the page on port 8000, so a phone opening
 // http://<laptop-ip>:5173 talks to http://<laptop-ip>:8000 without extra config.
@@ -17,6 +17,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function getHealth(signal?: AbortSignal): Promise<HealthResponse> {
   return request<HealthResponse>('/api/health', { signal })
+}
+
+export function getCatalog(): Promise<CatalogItem[]> {
+  return request<CatalogItem[]>('/api/catalog')
+}
+
+export function documentFileUrl(reconciliationId: string, documentId: string): string {
+  return `${API_URL}/api/reconciliations/${encodeURIComponent(reconciliationId)}/documents/${encodeURIComponent(documentId)}/file`
 }
 
 export function createReconciliation(files: {
