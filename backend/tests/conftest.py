@@ -10,3 +10,15 @@ def db(tmp_path, monkeypatch):
     get_settings.cache_clear()
     yield tmp_path / "test.db"
     get_settings.cache_clear()
+
+
+@pytest.fixture
+def client(db, tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    monkeypatch.setenv("UPLOADS_DIR", str(tmp_path / "uploads"))
+    get_settings.cache_clear()
+    yield TestClient(app)
+    get_settings.cache_clear()

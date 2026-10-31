@@ -1,5 +1,5 @@
 import type { HealthResponse } from '../types/health'
-import type { Reconciliation } from '../types/reconciliation'
+import type { Corrections, Reconciliation } from '../types/reconciliation'
 
 // Unset VITE_API_URL -> same host as the page on port 8000, so a phone opening
 // http://<laptop-ip>:5173 talks to http://<laptop-ip>:8000 without extra config.
@@ -33,6 +33,14 @@ export function createReconciliation(files: {
 
 export function getReconciliation(id: string): Promise<Reconciliation> {
   return request<Reconciliation>(`/api/reconciliations/${encodeURIComponent(id)}`)
+}
+
+export function submitCorrections(id: string, corrections: Corrections): Promise<Reconciliation> {
+  return request<Reconciliation>(`/api/reconciliations/${encodeURIComponent(id)}/corrections`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(corrections),
+  })
 }
 
 export function approveReconciliation(id: string): Promise<Reconciliation> {

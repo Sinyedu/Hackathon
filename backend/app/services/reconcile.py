@@ -24,7 +24,10 @@ class ReconcileResult(BaseModel):
 
 
 def _evidence(line: LineItem) -> str:
-    return f"{line.source_document_id}: {line.source_text}"
+    text = f"{line.source_document_id}: {line.source_text}"
+    if line.corrected:  # keep the original scan text and show what the user changed it to
+        text += f" [user-corrected: {line.description}, {line.quantity} {line.unit}]"
+    return text
 
 
 def _confirmed_item_ids(lines: list[LineItem], matches: dict[str, Match],

@@ -1,44 +1,6 @@
-import json
 from decimal import Decimal
-from pathlib import Path
 
-import pytest
-from fastapi.testclient import TestClient
-
-from app.main import app
-from app.services import ollama
-
-FIXTURES = Path(__file__).resolve().parents[2] / "fixtures"
-
-
-@pytest.fixture
-def client(db, tmp_path, monkeypatch):
-    monkeypatch.setenv("UPLOADS_DIR", str(tmp_path / "uploads"))
-    from app.core.config import get_settings
-    get_settings.cache_clear()
-    yield TestClient(app)
-    get_settings.cache_clear()
-
-
-def model_says_correct(monkeypatch) -> None:
-    async def chat(messages, **kwargs):
-        user = messages[1]["content"]
-        return json.dumps({"candidate_id": "P002" if "Pomme" in user else "P003",
-                           "reason": "test", "needs_review": False})
-    monkeypatch.setattr(ollama, "chat", chat)
-
-
-def model_down(monkeypatch) -> None:
-    async def chat(*args, **kwargs):
-        raise ollama.OllamaError("down")
-    monkeypatch.setattr(ollama, "chat", chat)
-
-
-def upload(client, **extra):
-    files = {"purchase_order": ("po.png", (FIXTURES / "purchase_order.png").read_bytes(), "image/png"),
-             "delivery_note": ("dn.png", (FIXTURES / "delivery_note.png").read_bytes(), "image/png")}
-    files.update(extra)
-    return client.post("/api/reconciliations", files=files)
+from helpers import FIXTURES, model_down, model_says_correct, upload
 
 
 def test_full_flow_scan_to_persisted_approval(client, monkeypatch) -> None:

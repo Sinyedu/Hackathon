@@ -3,8 +3,8 @@
 from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
-from app.schemas.domain import DocumentKind, Reconciliation
-from app.services import claims, pipeline, store
+from app.schemas.domain import Corrections, DocumentKind, Reconciliation
+from app.services import claims, corrections as correction_service, pipeline, store
 from app.services.extract import ExtractionError
 
 router = APIRouter(prefix="/reconciliations", tags=["reconciliations"])
@@ -66,3 +66,16 @@ def approve_reconciliation(reconciliation_id: str) -> Reconciliation:
     except claims.ClaimError as exc:
         raise HTTPException(409, str(exc)) from exc
     return _get_or_404(reconciliation_id)
+
+
+@router.post("/{reconciliation_id}/corrections", response_model=Reconciliation)
+async def correct_reconciliation(reconciliation_id: str, corrections: Corrections) -> Reconciliation:
+    """Fix OCR-misread lines or choose products manually; re-reconciles and updates the draft claim."""
+    try:
+        return await correction_service.apply_corrections(reconciliation_id, corrections)
+    except correction_service.CorrectionNotFound as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except correction_service.CorrectionConflict as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except correction_service.CorrectionInvalid as exc:
+        raise HTTPException(422, str(exc)) from exc

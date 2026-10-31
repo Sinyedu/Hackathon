@@ -51,6 +51,7 @@ class LineItem(BaseModel):
     unit: str
     unit_price: Decimal | None = None
     page: int | None = None
+    corrected: bool = False  # edited by the user after OCR
 
 
 class CatalogItem(BaseModel):
@@ -92,6 +93,27 @@ class Claim(BaseModel):
     discrepancies: list[Discrepancy]
     created_at: datetime
     approved_at: datetime | None = None
+
+
+class LineEdit(BaseModel):
+    """User correction of an OCR-read line. Only the supplied fields change."""
+
+    line_id: str
+    description: str | None = Field(default=None, min_length=1)
+    quantity: Decimal | None = Field(default=None, ge=0)
+    unit: str | None = None
+
+
+class MatchChoice(BaseModel):
+    """Manual product choice for a line; catalog_item_id=None means 'not in the catalog'."""
+
+    line_id: str
+    catalog_item_id: str | None = None
+
+
+class Corrections(BaseModel):
+    lines: list[LineEdit] = Field(default_factory=list)
+    matches: list[MatchChoice] = Field(default_factory=list)
 
 
 class Reconciliation(BaseModel):

@@ -17,26 +17,48 @@ The camera input uses native file capture, which works over plain HTTP.
 
 ## B. Public demo: Vercel frontend + tunnelled backend
 
-1. **Tunnel the API** (install `cloudflared` yourself first):
-   ```bash
-   make tunnel     # prints https://<random>.trycloudflare.com
-   ```
-   The URL changes on every restart (see "Gotchas").
-2. **Backend env** (`backend/.env`), then restart the backend:
+Cloudflare only provides the tunnel (a public HTTPS address for your laptop). The backend, OCR,
+SQLite and Ollama all keep running on the laptop. `cloudflared` is installed at
+`~/.local/bin/cloudflared` (no account or login needed for quick tunnels).
+
+### Checklist: what Vercel needs
+- [ ] The repo pushed to GitHub (it is) and a Vercel account connected to it.
+- [ ] A Vercel project with **Root Directory = `frontend`** (Vite and pnpm are auto-detected;
+      `frontend/vercel.json` already handles routing).
+- [ ] Environment variable **`VITE_API_URL`** = your tunnel URL (no trailing slash), for Production
+      (and Preview if you want previews to work).
+- [ ] The Vercel URL added to the backend's `CORS_ORIGINS`.
+
+### Steps
+1. Start everything on the laptop: `ollama list` must show `qwen3:1.7b`, then `make backend`.
+2. `make tunnel` in a second terminal. It prints `https://<words>.trycloudflare.com`; keep it running.
+3. Check it: `curl https://<words>.trycloudflare.com/api/health` returns `{"service":"DockProof API","status":"ok"}`.
+4. First deploy only: create the Vercel project (dashboard import, or `cd frontend && npx vercel`),
+   set `VITE_API_URL` to the tunnel URL, deploy. Note the production URL, e.g. `https://dockproof.vercel.app`.
+5. In `backend/.env` set (the backend reloads automatically):
    ```env
-   CORS_ORIGINS=http://localhost:5173,https://<your-app>.vercel.app
-   CORS_ORIGIN_REGEX=https://dockproof.*\.vercel\.app   # optional: preview deployments
+   CORS_ORIGINS=http://localhost:5173,https://dockproof.vercel.app
+   # optional, to allow preview deployments:
+   CORS_ORIGIN_REGEX=https://dockproof.*\.vercel\.app
    ```
-3. **Vercel**: import the repo, set **Root Directory = `frontend`**. Framework (Vite) and pnpm are
-   auto-detected. Add the environment variable:
-   `VITE_API_URL=https://<random>.trycloudflare.com` then deploy.
-   (Or: `cd frontend && vercel --prod` after `vercel login`.)
-4. Open the Vercel URL. The landing page must show **Backend online**.
+6. Open the Vercel URL: the landing page must say **Backend online**. Test an upload from a phone.
+
+### Every time the tunnel restarts
+Quick-tunnel URLs change on each run, so update `VITE_API_URL` in Vercel and redeploy
+(Vercel dashboard -> Settings -> Environment Variables -> Redeploy). Avoid this by doing the
+setup once, right before the demo, and not restarting `make tunnel` afterwards.
+
+### Stable URL (optional)
+A named Cloudflare tunnel keeps one URL but needs a free Cloudflare account and a domain on it:
+`cloudflared tunnel login`, `cloudflared tunnel create dockproof`,
+`cloudflared tunnel route dns dockproof api.<your-domain>`, then
+`cloudflared tunnel run --url http://localhost:8000 dockproof`. Set `VITE_API_URL=https://api.<your-domain>` once.
 
 ## Gotchas
 - `VITE_API_URL` is baked in at build time: a new tunnel URL means changing it in Vercel and
   redeploying. For a stable URL use a named Cloudflare tunnel or an ngrok free static domain.
 - Browsers block an HTTPS page from calling an HTTP API, so the tunnel (HTTPS) is required for Vercel.
+- The tunnel makes the API publicly reachable with no login. Use synthetic data only, and stop it after the demo.
 - The laptop must stay awake and online with Ollama running (`ollama list` shows `qwen3:1.7b`).
 - SQLite lives in `backend/dockproof.db` on the laptop; deleting it resets all cases.
 - Keep the local run (section A or `localhost`) as the fallback demo.

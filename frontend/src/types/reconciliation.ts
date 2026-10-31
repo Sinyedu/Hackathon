@@ -22,6 +22,7 @@ export interface LineItem {
   unit: string
   unit_price: string | null
   page: number | null
+  corrected: boolean
 }
 
 export interface Match {
@@ -49,6 +50,24 @@ export interface Claim {
   discrepancies: Discrepancy[]
   created_at: string
   approved_at: string | null
+}
+
+export interface LineEdit {
+  line_id: string
+  description?: string
+  quantity?: string
+  unit?: string
+}
+
+/** catalog_item_id null = "this product is not in the catalog". */
+export interface MatchChoice {
+  line_id: string
+  catalog_item_id: string | null
+}
+
+export interface Corrections {
+  lines?: LineEdit[]
+  matches?: MatchChoice[]
 }
 
 export interface Reconciliation {

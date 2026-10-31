@@ -22,6 +22,10 @@ def _require(rec: Reconciliation | None, reconciliation_id: str) -> Reconciliati
     return rec
 
 
+def new_claim(discrepancies: list[Discrepancy]) -> Claim:
+    return Claim(id=f"CLM-{uuid.uuid4().hex[:10]}", discrepancies=discrepancies, created_at=store.now())
+
+
 def create_draft_claim(reconciliation_id: str, discrepancies: list[Discrepancy]) -> Claim:
     """Persist a draft claim on the reconciliation and write an audit entry."""
     if not discrepancies:
@@ -31,8 +35,7 @@ def create_draft_claim(reconciliation_id: str, discrepancies: list[Discrepancy])
         if rec.claim is not None:
             raise ClaimError("This reconciliation already has a claim")
         rec.discrepancies = discrepancies
-        rec.claim = Claim(id=f"CLM-{uuid.uuid4().hex[:10]}", discrepancies=discrepancies,
-                          created_at=store.now())
+        rec.claim = new_claim(discrepancies)
         store.save(conn, rec)
         store.audit(conn, reconciliation_id, "claim_drafted", rec.claim.id)
     return _persisted_claim(reconciliation_id)
