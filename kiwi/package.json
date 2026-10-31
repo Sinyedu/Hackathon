@@ -1,0 +1,31 @@
+{
+  "name": "kiwi",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Kiwi, a local-first desktop assistant with a cute mascot.",
+  "scripts": {
+    "dev": "pnpm --filter @kiwi/desktop dev",
+    "build": "pnpm --filter @kiwi/desktop build",
+    "dist": "pnpm --filter @kiwi/desktop dist",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.1",
+    "vitest": "^5.0.5"
+  }
+}

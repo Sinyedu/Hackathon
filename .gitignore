@@ -34,3 +34,7 @@ dock-answers/
 
 # Vercel CLI link
 .vercel/
+
+# Kiwi build output
+kiwi/apps/desktop/out/
+kiwi/apps/desktop/release/
