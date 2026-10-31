@@ -96,3 +96,41 @@ def test_manual_resolve_settles_a_line_the_model_could_not(client, monkeypatch) 
     after = client.get(f"/api/reconciliations/{state['reconciliation_id']}").json()
     assert next(m for m in after["matches"] if m["source_line_id"] == line["id"])["status"] == "matched"
     assert client.post(f"/api/session/{sid}/resolve", json={"line_id": "nope", "catalog_item_id": None}).status_code == 404
+
+
+def _scan(name: str) -> bytes:
+    return (FIXTURES / name).read_bytes()
+
+
+def test_scans_with_camera_names_are_told_apart_by_their_title(client, monkeypatch) -> None:
+    model_says_correct(monkeypatch)
+    sid = client.post("/api/session").json()["id"]
+    # Deliberately delivery note first: only the printed title can say which is which.
+    files = [("documents", ("IMG_0001.png", _scan("delivery_note.png"), "image/png")),
+             ("documents", ("IMG_0002.png", _scan("purchase_order.png"), "image/png"))]
+    state = client.post(f"/api/session/{sid}/upload", files=files).json()
+    assert state["reconciliation_id"] and state["verdict"][0]["ordered"] == "24" and state["verdict"][0]["shortage"] == "6"
+
+
+def test_unreadable_title_falls_back_to_the_empty_slot(client) -> None:
+    from io import BytesIO
+
+    from PIL import Image
+    blank = BytesIO()
+    Image.new("RGB", (400, 300), "white").save(blank, "PNG")
+    sid = client.post("/api/session").json()["id"]
+    client.post(f"/api/session/{sid}/upload", files={"purchase_order": ("po.png", _scan("purchase_order.png"), "image/png")})
+    state = client.post(f"/api/session/{sid}/upload", files=[("documents", ("IMG_9.png", blank.getvalue(), "image/png"))])
+    # The blank page fills the empty delivery-note slot; reading it then fails clearly instead of guessing numbers.
+    assert state.status_code == 422 and "No line items found in delivery_note" in state.json()["detail"]
+
+
+def test_two_untitled_scans_are_not_guessed(client) -> None:
+    from io import BytesIO
+
+    from PIL import Image
+    blank = BytesIO()
+    Image.new("RGB", (400, 300), "white").save(blank, "PNG")
+    sid = client.post("/api/session").json()["id"]
+    res = client.post(f"/api/session/{sid}/upload", files=[("documents", ("a.png", blank.getvalue(), "image/png"))])
+    assert res.status_code == 422 and "could not tell" in res.json()["detail"]

@@ -179,3 +179,40 @@ def extract_line_items(content: bytes, *, document_id: str, kind: DocumentKind) 
     if not rows:
         raise ExtractionError(f"No line items found in {kind.value}")
     return _items(rows, document_id)
+
+
+_PO_WORDS = re.compile(r"purchase\s*order|order\s*(confirmation|no|number|#)|\bP\.?O\.?\b", re.I)
+_DN_WORDS = re.compile(r"delivery\s*(note|slip|receipt)|dispatch|despatch|packing\s*(slip|list)|goods\s*(received|receipt)|\bD\.?N\.?\b", re.I)
+
+
+def classify_text(lines: list[str]) -> DocumentKind | None:
+    """Purchase order or delivery note, from the words nearest the top of the page (the document's title)."""
+    for line in lines[:8]:
+        po, dn = _PO_WORDS.search(line), _DN_WORDS.search(line)
+        if po and not dn:
+            return DocumentKind.PURCHASE_ORDER
+        if dn and not po:
+            return DocumentKind.DELIVERY_NOTE
+        if po and dn:
+            return DocumentKind.PURCHASE_ORDER if po.start() < dn.start() else DocumentKind.DELIVERY_NOTE
+    return None
+
+
+def detect_kind(content: bytes) -> DocumentKind | None:
+    """Reads the scan (or PDF text) and decides which document it is; None when the title does not say.
+
+    Synchronous and CPU-bound like extract_line_items: call from a threadpool.
+    """
+    if content[:5] == b"%PDF-":
+        try:
+            pdf = pymupdf.open(stream=content, filetype="pdf")
+            lines = [ln.strip() for ln in pdf[0].get_text().splitlines() if ln.strip()] if len(pdf) else []
+        except Exception as exc:
+            raise ExtractionError("PDF could not be opened") from exc
+        if lines:
+            return classify_text(lines)
+        pix = pdf[0].get_pixmap(dpi=200)
+        image = Image.open(io.BytesIO(pix.tobytes("png")))
+    else:
+        image = _read_image(content)
+    return classify_text([" ".join(c.text for c in row) for row in group_rows(ocr_cells(image))])

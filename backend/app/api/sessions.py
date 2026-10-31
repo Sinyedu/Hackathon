@@ -12,14 +12,15 @@ from decimal import Decimal
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
-from app.api.reconciliations import _read
+from app.api.reconciliations import MAX_UPLOAD_BYTES, _read
 from app.schemas.domain import Corrections, Discrepancy, DocumentKind, MatchChoice, MatchStatus
 from app.services import claims, corrections, files, pipeline, store
 from app.services.counting import calculate
-from app.services.extract import ExtractionError
+from app.services.extract import ExtractionError, detect_kind
 from app.services.match import normalize_unit
 
 router = APIRouter(prefix="/session", tags=["session"])
@@ -88,13 +89,39 @@ def join(session_id: str) -> dict:
 
 @router.post("/{session_id}/upload")
 async def upload(session_id: str, purchase_order: UploadFile | None = None,
-                 delivery_note: UploadFile | None = None) -> dict:
+                 delivery_note: UploadFile | None = None, documents: list[UploadFile] | None = None) -> dict:
+    """Named slots, or `documents` whose type is worked out from the scan itself.
+
+    Photos are called IMG_0001.jpg, so the filename cannot say what they are. Order of evidence: a name that
+    says so, the title printed on the document, then whichever slot is still empty. If none decides, 422.
+    """
     session = _session(session_id)
     if purchase_order is not None and purchase_order.filename:
         session["purchase_order"] = await _read(purchase_order, DocumentKind.PURCHASE_ORDER)
     if delivery_note is not None and delivery_note.filename:
         session["delivery_note"] = await _read(delivery_note, DocumentKind.DELIVERY_NOTE)
+    for file in [f for f in (documents or []) if f.filename]:
+        kind = await _kind_of(file, session)
+        session[kind.value] = await _read(file, kind)
     return await _process_when_paired(session)
+
+
+async def _kind_of(file: UploadFile, session: dict) -> DocumentKind:
+    guessed = files.guess_kind(file.filename or "")
+    if guessed:
+        return guessed
+    content = await file.read(MAX_UPLOAD_BYTES + 1)
+    await file.seek(0)
+    try:
+        read = await run_in_threadpool(detect_kind, content)
+    except ExtractionError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    if read:
+        return read
+    empty = [k for k in (DocumentKind.PURCHASE_ORDER, DocumentKind.DELIVERY_NOTE) if not session[k.value]]
+    if len(empty) == 1:
+        return empty[0]
+    raise HTTPException(422, f"I could not tell whether {file.filename} is the purchase order or the delivery note")
 
 
 class ImportRequest(BaseModel):

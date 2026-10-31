@@ -26,12 +26,6 @@ export function useAgentFiles({ session, inputs, say, note }: Args) {
   const [pick, setPick] = useState<PickMode | null>(null)
   const [pending, setPending] = useState<Pending | null>(null)
 
-  const waitingFor = (): Kind | null => {
-    const last = session?.events.findLast((event) => event.type === 'delivery_received' || event.type === 'verdict')
-    const slot = last?.type === 'delivery_received' ? last.data.waiting_for : null
-    return slot === 'purchase_order' || slot === 'delivery_note' ? slot : null
-  }
-
   const openDevice = (reason?: string, camera = false) => {
     const mode: PickMode = camera && isTouch ? 'camera' : 'file'
     setPick(mode)
@@ -50,12 +44,19 @@ export function useAgentFiles({ session, inputs, say, note }: Args) {
     setPick(null)
     const bad = picked.find((file) => file.size > MAX_BYTES || !(file.type.startsWith('image/') || file.type === 'application/pdf'))
     if (bad) return say(`${bad.name} is not a photo or PDF under 10 MB.`)
-    const named = picked.map((file) => ({ file, kind: guessKind(file.name) ?? (picked.length === 1 ? waitingFor() : null) }))
-    for (const { file, kind } of named) if (kind) await send(file, kind)
-    const unknown = named.filter(({ kind }) => !kind).map(({ file }) => file)
-    if (unknown.length) {
-      setPending({ file: unknown[0], rest: unknown.slice(1) })
-      say(`Is ${unknown[0].name} the purchase order or the delivery note?`)
+    // A name that says what it is decides; otherwise the backend reads the scan's title (photos are called IMG_0001).
+    const named = picked.filter((file) => guessKind(file.name))
+    const unnamed = picked.filter((file) => !guessKind(file.name))
+    for (const file of named) await send(file, guessKind(file.name)!)
+    if (!unnamed.length || !session) return
+    note(`Reading ${unnamed.map((f) => f.name).join(' and ')} to see what ${unnamed.length === 1 ? 'it is' : 'they are'}.`)
+    try {
+      await uploadSession(session.id, { documents: unnamed })
+    } catch (e) {
+      // The scan did not say; ask once, in plain words.
+      if (!(e instanceof Error) || !/could not tell/.test(e.message)) throw e
+      setPending({ file: unnamed[0], rest: unnamed.slice(1) })
+      say(`I could not tell what ${unnamed[0].name} is. Is it the purchase order or the delivery note?`)
     }
   }
 
@@ -81,7 +82,7 @@ export function useAgentFiles({ session, inputs, say, note }: Args) {
     }
     const picked = pickFiles(text, listing)
     if (picked === 'ambiguous') return say('More than one file fits that. Say the file name, or tap it below.')
-    if (!picked.length) return openDevice('I did not find that in the files folder. Pick it from this device instead.')
+    if (!picked.length) return openDevice('Pick the documents from this device.')
     for (const file of picked) {
       if (!file.kind) return say(`I cannot tell if ${file.name} is the purchase order or the delivery note. Rename it with order or delivery in the name.`)
       note(`Importing ${file.name} as the ${label(file.kind)}.`)

@@ -139,7 +139,7 @@ export function useAgent({ inputs, session, result, brief, refresh, onGenerate, 
     if (intent === 'export') { exportBrief(); return say('I downloaded the briefing as a Markdown file.') }
     if (intent === 'link') return openOffer()
     if (intent === 'show') {
-      if (!result) return say('There are no documents to show yet. Add them first.')
+      if (!result) return run(() => docs.attach('attach files')) // nothing to show yet: offer the picker instead of a dead end
       const { bad, review } = summarise(buildRows(result))
       onShow(sheetTabFor(text))
       return say(`Here are the documents. ${bad ? `${bad} ${bad === 1 ? 'problem is' : 'problems are'} marked in red.` : 'Nothing is wrong.'}${review ? ` ${review} still need${review === 1 ? 's' : ''} your check.` : ''}`)
@@ -147,7 +147,11 @@ export function useAgent({ inputs, session, result, brief, refresh, onGenerate, 
     if (intent === 'files') return run(() => docs.attach(text))
     if (intent === 'generate') { onGenerate(); return say('Opening test deliveries. Print one and I will read it as soon as it lands.') }
     if (intent === 'elaborate') return elaborate(text)
-    if (intent === 'import') return run(() => docs.importNamed(text))
+    if (intent === 'import') {
+      if (/[\w-]+\.(pdf|png|jpe?g|webp)\b/i.test(text)) return run(() => docs.importNamed(text))
+      if (result) { onShow(sheetTabFor(text)); return say('Here are the documents.') }
+      return run(() => docs.attach('attach files'))
+    }
     if (!result) return say('I have nothing to look at yet. Add the documents first.')
     if (intent === 'walkthrough') return tour(result)
     if (intent === 'findings') return say(brief.sections[0].rows.map((r) => `${r.label}: ${r.value}${r.note ? `, ${r.note}` : ''}.`).join(' '))

@@ -11,7 +11,7 @@ const RULES: [Intent, RegExp][] = [
   ['link', /\b(replacement link|(open|follow|show)\b.*\b(link|supplier page)|where (can|do) i (buy|order|get))\b/i],
   ['generate', /\b(test deliver\w*|(generate|print|make|create) (me )?(a |the |some )?(delivery|deliveries|test|files?|documents?))\b/i],
   ['show', /\b((show|view|see|display|pull up)\b.*\b(documents?|receipts?|pdfs?|scans?|originals?|comparison|side by side|purchase order|delivery note)|(open|show) the (comparison|receipts?|pdfs?|originals?)|side by side)\b/i],
-  ['files', /\b(attach|upload|my files|take a (photo|picture)|camera|scan (a|the|this|it)|add (a |the |some )?(file|files|document|documents|scan|scans)|choose (a )?files?|(open|list|check)\b.*\b(files|folder)|what files)\b/i],
+  ['files', /\b(attach|upload|my files|take a (photo|picture)|camera|scan (a|the|this|it)|add (a |the |some )?(file|files|document|documents|scan|scans)|(add|open|read|analy[sz]e|select|pick|scan|upload) (my |the |these |those |some |any |all )?(documents?|receipts?|scans?|paperwork|invoices?)|choose (a )?files?|(open|list|check)\b.*\b(files|folder)|what files)\b/i],
   ['import', /\b(import|load|bring in|open (the )?(purchase|delivery|po|dn|both))\b/i],
   ['elaborate', /\b(elaborate|more detail|in detail|details? (on|about)|tell me more|explain|expand|show me the (findings|evidence|claim|review|documents))\b/i],
   ['recover', /\b(replace|replacement|recover|alternative|other supplier|reorder|re-order)\b/i],

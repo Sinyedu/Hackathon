@@ -44,10 +44,11 @@ export const createSession = () => json<Session>('/api/session', { method: 'POST
 export const getSession = (id: string) => json<Session>(`/api/session/${id}`)
 export const joinSession = (id: string) => json<Session>(`/api/session/${id}/join`, { method: 'POST' })
 export const lanIp = (id: string) => json<{ ip: string }>(`/api/session/${id}/lan-ip`)
-export const uploadSession = (id: string, files: { purchase_order?: File; delivery_note?: File }) => {
+export const uploadSession = (id: string, files: { purchase_order?: File; delivery_note?: File; documents?: File[] }) => {
   const body = new FormData()
   if (files.purchase_order) body.append('purchase_order', files.purchase_order)
   if (files.delivery_note) body.append('delivery_note', files.delivery_note)
+  for (const file of files.documents ?? []) body.append('documents', file) // the backend reads each scan to see what it is
   return json<Session>(`/api/session/${id}/upload`, { method: 'POST', body })
 }
 export interface LocalFile { name: string; size: number; kind: 'purchase_order' | 'delivery_note' | null }
