@@ -132,3 +132,70 @@ def test_speech_transcribe_joins_segments_and_wraps_decode_errors(monkeypatch) -
     import pytest
     with pytest.raises(speech.SpeechError, match="Could not read the audio"):
         speech.transcribe(b"x")
+
+
+def test_cards_are_built_from_results(seeded, monkeypatch) -> None:
+    rid = make_rec(seeded, monkeypatch)
+    seeded.post(f"/api/reconciliations/{rid}/discrepancies/P001/recover")
+    cards = seeded.get(f"/api/reconciliations/{rid}/cards").json()
+    by_kind = {c["kind"]: c for c in cards}
+    assert [c["title"] for c in cards if c["kind"] == "document"] == ["Purchase order", "Delivery note"]
+    assert "short by 6 case" in by_kind["discrepancy"]["facts"][0]
+    assert "Best: FarmDirect, 540.00 DKK" in by_kind["recovery"]["facts"]
+    assert by_kind["claim"]["subtitle"] == "Status: draft"
+    assert seeded.get("/api/reconciliations/nope/cards").status_code == 404
+
+
+def test_question_routes_to_the_right_card(client, monkeypatch) -> None:
+    rid = make_rec(client, monkeypatch)
+    capture_chat(monkeypatch)
+    ask = lambda q, focus=None: client.post(f"/api/reconciliations/{rid}/ask", json={"question": q, "focus": focus}).json()["focus"]
+    assert ask("What is in the delivery note?").endswith("delivery_note")
+    assert ask("show me the purchase order").endswith("purchase_order")
+    assert ask("what is missing?").startswith("disc:")
+    assert ask("is the claim approved?") == "claim"
+    assert ask("explain this", focus="claim") == "claim"      # falls back to the open card
+    assert ask("explain this", focus="bogus") is None         # unknown focus is ignored
+    assert ask("hello") is None
+
+
+def test_focus_card_is_sent_to_the_model(client, monkeypatch) -> None:
+    rid = make_rec(client, monkeypatch)
+    seen = capture_chat(monkeypatch)
+    client.post(f"/api/reconciliations/{rid}/ask", json={"question": "explain this", "focus": "claim"})
+    assert '"focus"' in seen["user"] and "Supplier claim" in seen["user"]
+
+
+def test_invented_numbers_are_rejected_and_replaced_with_the_data(client, monkeypatch) -> None:
+    rid = make_rec(client, monkeypatch)
+    capture_chat(monkeypatch, "You are short by 7 cases of tomatoes.")  # 7 is not in the data
+    body = client.post(f"/api/reconciliations/{rid}/ask", json={"question": "what is missing?"}).json()
+    assert body["grounded"] is False
+    assert "short by 6 case" in body["answer"] and "7" not in body["answer"]
+
+
+def test_grounded_answers_pass_through(client, monkeypatch) -> None:
+    rid = make_rec(client, monkeypatch)
+    capture_chat(monkeypatch, "Tomatoes are short by 6 cases: 24 ordered, 18 delivered.")
+    body = client.post(f"/api/reconciliations/{rid}/ask", json={"question": "what is missing?"}).json()
+    assert body["grounded"] is True and body["answer"].startswith("Tomatoes are short by 6")
+
+
+def test_numbers_grounded_helper() -> None:
+    assert assistant.numbers_grounded("18 of 24", '{"a": "24", "b": 18}')
+    assert not assistant.numbers_grounded("19 of 24", '{"a": "24", "b": 18}')
+    assert assistant.numbers_grounded("no figures here", "{}")
+
+
+def test_assistant_uses_its_own_model_and_falls_back(client, monkeypatch) -> None:
+    rid = make_rec(client, monkeypatch)
+    used: list[str | None] = []
+
+    async def chat(messages, **kwargs):
+        used.append(kwargs.get("model"))
+        if kwargs.get("model"):
+            raise ollama.OllamaError("model not found")
+        return "Tomatoes are short by 6 cases."
+    monkeypatch.setattr(ollama, "chat", chat)
+    res = client.post(f"/api/reconciliations/{rid}/ask", json={"question": "what is missing?"})
+    assert res.status_code == 200 and used == ["qwen3:4b-instruct-2507-q4_K_M", None]

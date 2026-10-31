@@ -16,6 +16,7 @@ async def chat(
     *,
     format: str | dict[str, Any] | None = None,
     timeout: float = 60.0,
+    model: str | None = None,
 ) -> str:
     """Send messages to Ollama's /api/chat and return the raw message content.
 
@@ -23,7 +24,7 @@ async def chat(
     """
     settings = get_settings()
     payload: dict[str, Any] = {
-        "model": settings.ollama_model,
+        "model": model or settings.ollama_model,
         "messages": messages,
         "stream": False,
         "think": False,

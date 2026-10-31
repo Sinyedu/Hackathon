@@ -9,8 +9,11 @@ class Settings(BaseSettings):
 
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "qwen3:1.7b"
+    # Voice assistant model (under 5B). Scored 36/36 vs 33/36 for qwen3:1.7b on scripts/eval_assistant.py;
+    # matching and compatibility stay on the faster ollama_model.
+    assistant_model: str = "qwen3:4b-instruct-2507-q4_K_M"
     # Speech-to-text (open-weight Whisper via faster-whisper). Use "base" for multilingual.
-    whisper_model: str = "base.en"
+    whisper_model: str = "small.en"
     whisper_language: str = "en"
     suppliers_path: str = str(Path(__file__).resolve().parents[3] / "fixtures" / "suppliers.json")
     catalog_path: str = str(Path(__file__).resolve().parents[3] / "fixtures" / "catalog.json")

@@ -1,6 +1,6 @@
 import type { HealthResponse } from '../types/health'
 import type { CatalogItem, Corrections, Reconciliation } from '../types/reconciliation'
-import type { AskResponse } from '../types/assistant'
+import type { AgentCard, AskResponse } from '../types/assistant'
 import type { Priority, RecoveryPlan, ReplacementOrder } from '../types/recovery'
 
 // Unset VITE_API_URL -> same host as the page on port 8000, so a phone opening
@@ -114,11 +114,15 @@ export function startDemoScenario(): Promise<Reconciliation> {
 
 // --- Assistant (questions and voice) ---
 
-export function askQuestion(reconciliationId: string, question: string): Promise<AskResponse> {
+export function getCards(reconciliationId: string): Promise<AgentCard[]> {
+  return request<AgentCard[]>(`/api/reconciliations/${encodeURIComponent(reconciliationId)}/cards`)
+}
+
+export function askQuestion(reconciliationId: string, question: string, focus?: string | null): Promise<AskResponse> {
   return request<AskResponse>(`/api/reconciliations/${encodeURIComponent(reconciliationId)}/ask`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, focus: focus ?? null }),
   })
 }
 

@@ -14,15 +14,26 @@ MAX_AUDIO_BYTES = 5 * 1024 * 1024
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=500)
+    focus: str | None = Field(default=None, max_length=100)  # card the user has open
 
 
 class AskResponse(BaseModel):
     answer: str
     sources: list[Document]  # the scans the answer is based on (UI links to the originals)
+    focus: str | None = None  # card the answer is about; the UI opens it
+    grounded: bool = True  # False: the model's wording was rejected and the answer comes straight from the data
 
 
 class TranscriptResponse(BaseModel):
     text: str
+
+
+@router.get("/reconciliations/{reconciliation_id}/cards", response_model=list[assistant.Card])
+def cards(reconciliation_id: str) -> list[assistant.Card]:
+    rec = store.get_reconciliation(reconciliation_id)
+    if rec is None:
+        raise HTTPException(404, "Reconciliation not found")
+    return assistant.build_cards(rec, recovery.get_plans_for_all(reconciliation_id))
 
 
 @router.post("/reconciliations/{reconciliation_id}/ask", response_model=AskResponse)
@@ -35,10 +46,10 @@ async def ask(reconciliation_id: str, body: AskRequest) -> AskResponse:
         raise HTTPException(422, "Question is empty")
     plans = recovery.get_plans_for_all(reconciliation_id)
     try:
-        reply, sources = await assistant.answer(rec, plans, question)
+        reply, sources, focus, grounded = await assistant.answer(rec, plans, question, body.focus)
     except ollama.OllamaError as exc:
         raise HTTPException(503, "The local AI model is not available right now") from exc
-    return AskResponse(answer=reply, sources=sources)
+    return AskResponse(answer=reply, sources=sources, focus=focus, grounded=grounded)
 
 
 @router.post("/voice/transcribe", response_model=TranscriptResponse)

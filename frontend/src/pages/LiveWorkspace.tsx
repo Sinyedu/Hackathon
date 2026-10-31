@@ -1,10 +1,11 @@
+import '../agent.css'
 import { useCallback, useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 import LiveDot from '../components/LiveDot'
 import ChaosDock from '../components/ChaosDock'
 import ProofSheet from '../components/ProofSheet'
 import ReceiptStrip from '../components/ReceiptStrip'
-import AskPanel from '../components/AskPanel'
+import AgentHost from '../components/AgentHost'
 import RecoveryPanel from '../components/RecoveryPanel'
 import Stamp from '../components/Stamp'
 import { answerSession, approveSession, createSession, getResult, getSession, joinSession, lanIp, resetSession, revealAnswer, updateCount, uploadSession, API } from '../services/session'
@@ -144,7 +145,7 @@ function Result({ session, result, refresh, onError, isDock }: { session: Sessio
   }
   const proofLine = result.line_items.find(line => line.id === proof)
   return <section className="result-area">
-    <AskPanel reconciliationId={result.id} />
+    <AgentHost reconciliationId={result.id} />
     <div className="section-label">03 / VERDICT · {result.id}</div>
     <div className="verdict-head"><div><h1>{shortage.length ? <><span className="big-number">{problemCount}</span><span> units missing.</span></> : result.status === 'needs_review' ? 'Review needed.' : 'Everything checks out.'}</h1><p>{shortage.length ? `${shortage.length} discrepancy${shortage.length === 1 ? '' : 'ies'} found in the documents.` : result.status === 'needs_review' ? 'Resolve open product or unit questions before approval.' : 'Your delivery matches your purchase order.'}</p></div><Stamp tone={approved ? 'approved' : shortage.length ? 'problem' : 'ok'}>{approved ? 'APPROVED' : shortage.length ? 'SHORT' : result.status === 'needs_review' ? 'REVIEW' : 'ALL GOOD'}</Stamp></div>
     <div className="receipt-grid"><ReceiptStrip title="PURCHASE ORDER" lines={result.line_items.filter(line => result.documents.find(doc => doc.id === line.source_document_id)?.kind === 'purchase_order')} /><ReceiptStrip title="DELIVERY NOTE" lines={result.line_items.filter(line => result.documents.find(doc => doc.id === line.source_document_id)?.kind === 'delivery_note')} angle="right" /></div>
