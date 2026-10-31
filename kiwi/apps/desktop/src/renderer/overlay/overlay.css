@@ -1,14 +1,13 @@
-.mascot-placeholder {
+.mascot-button {
   position: absolute;
-  border-radius: 50%;
-  background: var(--kiwi-green);
-  border: 4px solid var(--kiwi-green-dark);
-  box-sizing: border-box;
+  padding: 0;
+  background: none;
+  border: 0;
   cursor: grab;
   touch-action: none;
   user-select: none;
 }
 
-.mascot-placeholder:active {
+.mascot-button:active {
   cursor: grabbing;
 }

@@ -1,9 +1,12 @@
-import { StrictMode, useEffect } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import type { ChatMessage } from '@kiwi/shared';
+import { ChatPanel } from '../chat/ChatPanel';
 import '../styles/tokens.css';
-import './panel.css';
 
 function Panel() {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') window.kiwi.panel.hide();
@@ -12,12 +15,10 @@ function Panel() {
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, []);
 
-  return (
-    <main className="panel">
-      <h1>Kiwi</h1>
-      <p>The chat panel is empty for now. Press Esc to close it.</p>
-    </main>
-  );
+  const send = (text: string): void =>
+    setMessages((current) => [...current, { id: crypto.randomUUID(), role: 'user', text }]);
+
+  return <ChatPanel state="idle" messages={messages} onSend={send} />;
 }
 
 const root = document.getElementById('root');

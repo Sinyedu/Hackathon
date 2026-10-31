@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MASCOT_HIT_AREA } from '@kiwi/shared';
+import { Mascot } from '../mascot/Mascot';
 import '../styles/tokens.css';
 import './overlay.css';
 import { useMascotDrag } from './use-mascot-drag';
@@ -10,11 +11,13 @@ function Overlay() {
   return (
     <button
       type="button"
-      className="mascot-placeholder"
+      className="mascot-button"
       aria-label="Kiwi. Click to open the chat panel, drag to move."
       style={{ ...MASCOT_HIT_AREA, left: MASCOT_HIT_AREA.x, top: MASCOT_HIT_AREA.y }}
       {...drag}
-    />
+    >
+      <Mascot state="idle" />
+    </button>
   );
 }
 

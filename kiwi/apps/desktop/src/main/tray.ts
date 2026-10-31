@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { app, Menu, nativeImage, Tray } from 'electron';
 import type { MascotController } from './mascot-controller';
+import { createGalleryWindow } from './windows';
 
 const trayIconPath = (): string =>
   app.isPackaged
@@ -14,6 +15,9 @@ export function createTray(controller: MascotController): Tray {
   tray.setContextMenu(
     Menu.buildFromTemplate([
       { label: 'Show / Hide Kiwi', click: () => controller.toggleOverlay() },
+      ...(process.env['ELECTRON_RENDERER_URL']
+        ? [{ label: 'State gallery (dev)', click: () => void createGalleryWindow() }]
+        : []),
       { type: 'separator' },
       { label: 'Quit', click: () => app.quit() },
     ]),

@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { BrowserWindow, screen } from 'electron';
 import { OVERLAY_SIZE, PANEL_SIZE, type Settings } from '@kiwi/shared';
 
-type Page = 'overlay' | 'panel';
+type Page = 'overlay' | 'panel' | 'gallery';
 
 const webPreferences = {
   preload: join(__dirname, '../preload/index.js'),
@@ -59,5 +59,17 @@ export function createPanelWindow(): BrowserWindow {
   });
   window.setAlwaysOnTop(true, 'floating');
   loadPage(window, 'panel');
+  return window;
+}
+
+/** Dev-only: the state gallery is served by the Vite dev server and absent from builds. */
+export function createGalleryWindow(): BrowserWindow {
+  const window = new BrowserWindow({
+    width: 1000,
+    height: 900,
+    title: 'Kiwi state gallery',
+    webPreferences,
+  });
+  loadPage(window, 'gallery');
   return window;
 }

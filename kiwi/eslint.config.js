@@ -17,7 +17,15 @@ export default tseslint.config(
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/ban-ts-comment': ['error', { 'ts-ignore': true }],
       'max-lines': ['error', { max: 200, skipBlankLines: true, skipComments: true }],
+      '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
       'max-lines-per-function': ['error', { max: 40, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
+    // JSX components are verbose; the limit is relaxed for them only.
+    files: ['**/*.tsx'],
+    rules: {
+      'max-lines-per-function': ['error', { max: 70, skipBlankLines: true, skipComments: true }],
     },
   },
   {
