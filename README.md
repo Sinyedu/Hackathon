@@ -80,6 +80,11 @@ Needs the backend, frontend and Ollama running (`ollama list` shows `qwen3:1.7b`
 Suppliers are loaded from `fixtures/suppliers.json` at backend startup. The seed is idempotent and never overwrites existing rows; to re-seed manually run `cd backend && PYTHONPATH=. python -c "from app.services.suppliers import seed_suppliers; print(seed_suppliers())"`.
 New endpoints: `GET /api/suppliers`, `POST /api/reconciliations/{id}/discrepancies/{item}/recover`, `GET .../recovery`, `POST /api/recovery-plans/{id}/draft-order`, `POST /api/replacement-orders/{id}/approve|reject`, `POST /api/demo/missing-tomatoes`.
 
+## Ask by voice (assistant)
+
+The floating **Ask** button opens a chat. Tap the microphone and speak, or type or pick a question. Speech is transcribed locally by open-weight Whisper (`base.en` via faster-whisper, about 145 MB, downloaded on first use; set `WHISPER_MODEL`/`WHISPER_LANGUAGE` in `backend/.env`). Qwen3 1.7B then answers from the text DockProof read plus its calculated results, with links to the original scans. It cannot see the image pixels. The microphone needs HTTPS or localhost (the Vercel site and the tunnel qualify; a plain-HTTP LAN address does not, so type there). "Read answers aloud" uses the browser's built-in voice.
+Endpoints: `POST /api/voice/transcribe`, `POST /api/reconciliations/{id}/ask`.
+
 ## URLs
 
 - Frontend: <http://localhost:5173>

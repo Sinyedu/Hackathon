@@ -1,5 +1,6 @@
 import type { HealthResponse } from '../types/health'
 import type { CatalogItem, Corrections, Reconciliation } from '../types/reconciliation'
+import type { AskResponse } from '../types/assistant'
 import type { Priority, RecoveryPlan, ReplacementOrder } from '../types/recovery'
 
 // Unset VITE_API_URL -> same host as the page on port 8000, so a phone opening
@@ -109,4 +110,22 @@ export function decideReplacementOrder(
 /** Runs the real pipeline on the synthetic "Missing Tomatoes" fixture scans. */
 export function startDemoScenario(): Promise<Reconciliation> {
   return request<Reconciliation>('/api/demo/missing-tomatoes', { method: 'POST' })
+}
+
+// --- Assistant (questions and voice) ---
+
+export function askQuestion(reconciliationId: string, question: string): Promise<AskResponse> {
+  return request<AskResponse>(`/api/reconciliations/${encodeURIComponent(reconciliationId)}/ask`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question }),
+  })
+}
+
+/** Local Whisper speech-to-text. Returns the transcript so the user can see what was heard. */
+export async function transcribeAudio(audio: Blob): Promise<string> {
+  const form = new FormData()
+  const extension = audio.type.includes('mp4') ? 'mp4' : audio.type.includes('ogg') ? 'ogg' : 'webm'
+  form.append('audio', audio, `speech.${extension}`)
+  return (await request<{ text: string }>('/api/voice/transcribe', { method: 'POST', body: form })).text
 }

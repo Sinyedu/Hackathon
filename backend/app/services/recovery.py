@@ -58,6 +58,13 @@ def get_plan_for(reconciliation_id: str, catalog_item_id: str) -> RecoveryPlan |
             (reconciliation_id, catalog_item_id)).fetchone())
 
 
+def get_plans_for_all(reconciliation_id: str) -> list[RecoveryPlan]:
+    with store.transaction() as conn:
+        rows = conn.execute("SELECT payload FROM recovery_plans WHERE reconciliation_id = ? ORDER BY created_at",
+                            (reconciliation_id,)).fetchall()
+        return [p for p in (_plan_from_row(conn, r) for r in rows) if p is not None]
+
+
 async def _evaluate(original: CatalogItem, required) -> tuple[list[RecoveryOption], list[ExcludedCandidate], list[str]]:
     options: list[RecoveryOption] = []
     excluded: list[ExcludedCandidate] = []

@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import type { Document } from '../types/reconciliation'
 import type { ReplacementOrder } from '../types/recovery'
+import ScanLinks from './ScanLinks'
 
 const STATUS = {
   draft: 'bg-amber-100 text-amber-800',
@@ -9,30 +11,28 @@ const STATUS = {
 
 interface Props {
   order: ReplacementOrder
+  documents: Document[]
   busy: boolean
   onDecide: (decision: 'approve' | 'reject', confirm: boolean) => void
 }
 
-export default function ReplacementOrderCard({ order: o, busy, onDecide }: Props) {
+export default function ReplacementOrderCard({ order: o, documents, busy, onDecide }: Props) {
   const [confirmed, setConfirmed] = useState(false)
   const draft = o.status === 'draft'
   return (
-    <section className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm">
+    <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
       <div className="flex items-center justify-between gap-2">
-        <h4 className="font-semibold text-slate-900">Replacement order <span className="font-mono text-sm text-slate-500">{o.id}</span></h4>
+        <h3 className="font-semibold text-slate-900">Replacement order</h3>
         <span className={`rounded-full px-3 py-1 text-sm font-medium capitalize ${STATUS[o.status]}`}>{o.status}</span>
       </div>
-      <dl className="mt-3 grid gap-x-4 gap-y-1 text-sm sm:grid-cols-2">
-        <div><dt className="text-slate-500">Replaces</dt><dd>{o.missing_quantity} {o.original_unit} of {o.original_description}</dd></div>
-        <div><dt className="text-slate-500">With</dt><dd>{o.option.description} ({o.option.supplier_name})</dd></div>
-        <div><dt className="text-slate-500">Quantity</dt><dd>{o.packages} × {o.option.pack_size} {o.option.pack_unit} {o.option.sale_unit}</dd></div>
-        <div><dt className="text-slate-500">Unit price</dt><dd>{o.unit_price} {o.currency}</dd></div>
-        <div><dt className="text-slate-500">Estimated total</dt><dd className="font-semibold">{o.total_estimated_cost} {o.currency} (excl. taxes/shipping)</dd></div>
-        <div><dt className="text-slate-500">Lead time</dt><dd>{o.lead_time_days} day(s)</dd></div>
-      </dl>
+      <p className="mt-2 text-slate-800">{o.packages} × {o.option.pack_size} {o.option.pack_unit} from <strong>{o.option.supplier_name}</strong></p>
+      <p className="text-sm text-slate-600">
+        Replaces {o.missing_quantity} {o.original_unit} of {o.original_description} · est. {o.total_estimated_cost} {o.currency} (excl. tax/shipping) · {o.lead_time_days} day(s)
+      </p>
       {o.warning && <p className="mt-3 rounded-lg bg-amber-50 p-2 text-sm text-amber-900">{o.warning}</p>}
+      <div className="mt-3"><ScanLinks reconciliationId={o.reconciliation_id} documents={documents} label="Based on" /></div>
       {draft ? (
-        <div className="mt-3 flex flex-col gap-2">
+        <div className="mt-4 flex flex-col gap-2">
           {o.requires_confirmation && (
             <label className="flex items-start gap-2 text-sm text-slate-800">
               <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="mt-1" />
@@ -41,17 +41,15 @@ export default function ReplacementOrderCard({ order: o, busy, onDecide }: Props
           )}
           <div className="flex gap-2">
             <button onClick={() => onDecide('approve', confirmed)} disabled={busy || (o.requires_confirmation && !confirmed)}
-              className="rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white disabled:bg-slate-300">Approve draft</button>
+              className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 font-semibold text-white disabled:bg-slate-300">Approve draft</button>
             <button onClick={() => onDecide('reject', false)} disabled={busy}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-slate-700 disabled:opacity-50">Reject</button>
+              className="rounded-lg border border-slate-300 px-4 py-2.5 text-slate-700 disabled:opacity-50">Reject</button>
           </div>
         </div>
       ) : (
-        <p className="mt-3 text-sm text-slate-600">
-          {o.status === 'approved' ? 'Approved' : 'Rejected'} internally{o.decided_at ? ` on ${new Date(o.decided_at).toLocaleString()}` : ''}.
-        </p>
+        <p className="mt-3 text-sm text-slate-600">{o.status === 'approved' ? 'Approved' : 'Rejected'} internally{o.decided_at ? ` on ${new Date(o.decided_at).toLocaleString()}` : ''}.</p>
       )}
-      <p className="mt-2 text-xs text-slate-500">Internal record only: no order is placed and no supplier is contacted.</p>
+      <p className="mt-3 text-xs text-slate-500">Internal record only: no order is placed and no supplier is contacted.</p>
     </section>
   )
 }

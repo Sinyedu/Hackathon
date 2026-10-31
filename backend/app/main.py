@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import catalog, health, reconciliations, recovery
+from app.api import assistant, catalog, health, reconciliations, recovery
 from app.core.config import get_settings
 from app.core.db import init_db
 from app.services.suppliers import seed_suppliers
@@ -32,3 +32,4 @@ app.include_router(health.router, prefix="/api")
 app.include_router(catalog.router, prefix="/api")
 app.include_router(reconciliations.router, prefix="/api")
 app.include_router(recovery.router, prefix="/api")
+app.include_router(assistant.router, prefix="/api")
