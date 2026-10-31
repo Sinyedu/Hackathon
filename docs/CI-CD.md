@@ -25,12 +25,11 @@ It builds with `VITE_API_URL` taken from the GitHub repository variable of the s
    Then, on the **Variables** tab (not Secrets), add `VITE_API_URL` = your current tunnel URL.
    Vercel cannot hand "Sensitive" variables to the CLI, so the deploy workflow takes the API URL
    from this GitHub variable instead. Update it whenever the tunnel URL changes.
-4. Avoid double deploys: Vercel's own Git integration also deploys every push. Once the secrets work,
-   turn off its production deploys by adding to `frontend/vercel.json`:
-   ```json
-   "git": { "deploymentEnabled": { "main": false } }
-   ```
-   (Do this only after a successful Actions deploy, otherwise `main` would not deploy at all.)
+4. Production deploys happen only through this workflow: `frontend/vercel.json` sets
+   `"git": {"deploymentEnabled": {"main": false}}`, which turns off Vercel's own deploy on pushes to
+   `main`. Preview deployments for other branches/PRs still come from Vercel's Git integration.
+   If the Actions deploy ever breaks, remove that setting (or deploy from the Vercel dashboard)
+   to get automatic deploys back.
 
 ## What is not automated
 The backend, Ollama and the Cloudflare tunnel run on a laptop, so there is no server to deploy to.
