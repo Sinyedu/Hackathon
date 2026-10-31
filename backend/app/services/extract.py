@@ -37,6 +37,7 @@ class Cell:
     x: float  # deskewed centre
     y: float
     height: float
+    box: tuple[float, float, float, float] | None = None
 
 
 @dataclass(frozen=True)
@@ -46,6 +47,7 @@ class Row:
     quantity: Decimal
     unit: str
     unit_price: Decimal | None
+    box: tuple[float, float, float, float] | None = None
 
 
 def to_decimal(text: str) -> Decimal | None:
@@ -80,7 +82,9 @@ def ocr_cells(image: Image.Image) -> list[Cell]:
     for b, text, _ in boxes:
         cx, cy = b.mean(axis=0)
         cells.append(Cell(text.strip(), cx * cos + cy * sin, -cx * sin + cy * cos,
-                          float(np.linalg.norm(b[3] - b[0]))))
+                          float(np.linalg.norm(b[3] - b[0])),
+                          (float(b[:, 0].min()), float(b[:, 1].min()),
+                           float(b[:, 0].max()), float(b[:, 1].max()))))
     return cells
 
 
@@ -111,7 +115,10 @@ def parse_cells(cells: list[Cell]) -> Row | None:
     after = cells[q + 1:]
     unit = next((c.text for c in after if c.text.isalpha()), "")
     price = next((to_decimal(c.text) for c in after if PRICE.match(c.text) and not c.text.isalpha()), None)
-    return Row(" ".join(c.text for c in cells), description, quantity, unit.lower(), price)
+    boxes = [c.box for c in cells if c.box is not None]
+    box = (min(b[0] for b in boxes), min(b[1] for b in boxes),
+           max(b[2] for b in boxes), max(b[3] for b in boxes)) if boxes else None
+    return Row(" ".join(c.text for c in cells), description, quantity, unit.lower(), price, box)
 
 
 def parse_text_line(line: str) -> Row | None:
@@ -129,7 +136,7 @@ def _items(rows: list[tuple[Row, int | None]], document_id: str) -> list[LineIte
     return [
         LineItem(id=f"{document_id}-L{n}", source_document_id=document_id, source_text=r.text,
                  description=r.description, quantity=r.quantity, unit=r.unit,
-                 unit_price=r.unit_price, page=page)
+                 unit_price=r.unit_price, page=page, bbox=r.box)
         for n, (r, page) in enumerate(rows, start=1)
     ]
 

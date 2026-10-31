@@ -29,3 +29,23 @@ def test_waits_for_both_documents(client) -> None:
     assert response.status_code == 200
     assert response.json()["reconciliation_id"] is None
     assert response.json()["events"][-1]["data"]["waiting_for"] == "delivery_note"
+
+
+def test_count_replaces_note_quantity_and_updates_draft(client, monkeypatch) -> None:
+    model_says_correct(monkeypatch)
+    sid = client.post("/api/session").json()["id"]
+    files = {"purchase_order": ("po.png", (FIXTURES / "purchase_order.png").read_bytes(), "image/png"),
+             "delivery_note": ("dn.png", (FIXTURES / "delivery_note.png").read_bytes(), "image/png")}
+    state = client.post(f"/api/session/{sid}/upload", files=files).json()
+    for question in [e["data"] for e in state["events"] if e["type"] == "question"]:
+        answer = client.post(f"/api/session/{sid}/answer", json={**question, "yes": True})
+        assert answer.status_code == 200
+    rec = client.get(f"/api/reconciliations/{state['reconciliation_id']}").json()
+    line = next(line for line in rec["line_items"] if "delivery_note" in line["source_document_id"] and "Tomato" in line["description"])
+    updated = client.post(f"/api/session/{sid}/count", json={"line_id": line["id"], "counted": "16"})
+    assert updated.status_code == 200
+    row = next(row for row in updated.json()["verdict"] if row["catalog_item_id"] == "P001")
+    assert row["received"] == "16" and row["shortage"] == "8"
+    rec = client.get(f"/api/reconciliations/{state['reconciliation_id']}").json()
+    assert rec["claim"]["status"] == "draft"
+    assert next(d for d in rec["discrepancies"] if d["catalog_item_id"] == "P001")["delivered_quantity"] == "16"

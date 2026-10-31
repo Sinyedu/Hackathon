@@ -52,6 +52,7 @@ class LineItem(BaseModel):
     unit: str
     unit_price: Decimal | None = None
     page: int | None = None
+    bbox: tuple[float, float, float, float] | None = None
     corrected: bool = False  # edited by the user after OCR
 
 

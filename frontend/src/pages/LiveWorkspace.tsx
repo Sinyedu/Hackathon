@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 import LiveDot from '../components/LiveDot'
+import ProofSheet from '../components/ProofSheet'
 import ReceiptStrip from '../components/ReceiptStrip'
 import Stamp from '../components/Stamp'
-import { answerSession, approveSession, createSession, getResult, getSession, joinSession, lanIp, resetSession, uploadSession, API } from '../services/session'
+import { answerSession, approveSession, createSession, getResult, getSession, joinSession, lanIp, resetSession, updateCount, uploadSession, API } from '../services/session'
 import type { Session } from '../services/session'
 import type { Reconciliation } from '../types/reconciliation'
 
@@ -122,22 +123,37 @@ function Questions({ session, result, refresh, onError }: { session: Session; re
 function Result({ session, result, refresh, onError, isDock }: { session: Session; result: Reconciliation; refresh: (id: string) => Promise<void>; onError: (value: string) => void; isDock: boolean }) {
   const [busy, setBusy] = useState(false)
   const [claimOpen, setClaimOpen] = useState(false)
+  const [proof, setProof] = useState<string | null>(null)
   const shortage = result.discrepancies.filter(item => Number(item.difference) < 0)
   const problemCount = shortage.reduce((sum, item) => sum + Math.abs(Number(item.difference)), 0)
   const approved = result.claim?.status === 'approved'
+  const claimRows = session.verdict.filter(row => Number(row.shortage) > 0 || Number(row.note_overstated) > 0)
+  const claimCents = claimRows.some(row => row.claim_cents === null) ? null : claimRows.reduce((sum, row) => sum + (row.claim_cents || 0), 0)
   const approve = async () => {
     setBusy(true)
     try { await approveSession(session.id); await refresh(session.id) } catch (cause) { onError((cause as Error).message) } finally { setBusy(false) }
   }
+  const count = async (lineId: string, value: string | null) => {
+    setBusy(true)
+    try { await updateCount(session.id, lineId, value); await refresh(session.id) }
+    catch (cause) { onError((cause as Error).message) } finally { setBusy(false) }
+  }
+  const proofLine = result.line_items.find(line => line.id === proof)
   return <section className="result-area">
     <div className="section-label">03 / VERDICT · {result.id}</div>
     <div className="verdict-head"><div><h1>{shortage.length ? <><span className="big-number">{problemCount}</span><span> units missing.</span></> : result.status === 'needs_review' ? 'Review needed.' : 'Everything checks out.'}</h1><p>{shortage.length ? `${shortage.length} discrepancy${shortage.length === 1 ? '' : 'ies'} found in the documents.` : result.status === 'needs_review' ? 'Resolve open product or unit questions before approval.' : 'Your delivery matches your purchase order.'}</p></div><Stamp tone={approved ? 'approved' : shortage.length ? 'problem' : 'ok'}>{approved ? 'APPROVED' : shortage.length ? 'SHORT' : result.status === 'needs_review' ? 'REVIEW' : 'ALL GOOD'}</Stamp></div>
     <div className="receipt-grid"><ReceiptStrip title="PURCHASE ORDER" lines={result.line_items.filter(line => result.documents.find(doc => doc.id === line.source_document_id)?.kind === 'purchase_order')} /><ReceiptStrip title="DELIVERY NOTE" lines={result.line_items.filter(line => result.documents.find(doc => doc.id === line.source_document_id)?.kind === 'delivery_note')} angle="right" /></div>
-    <div className="evidence-table"><div className="section-label">SOURCE COMPARISON</div>{result.discrepancies.map(item => <details key={item.catalog_item_id}><summary><strong>{item.description}</strong><span className="problem-value">{item.difference} {item.unit}</span></summary><div className="evidence-detail"><span>Ordered {item.ordered_quantity} {item.unit}</span><span>Note {item.delivered_quantity} {item.unit}</span>{item.evidence.map((source, index) => <code key={index}>{source}</code>)}</div></details>)}</div>
+    {isDock && session.verdict.length > 0 && <section className="count-section"><div className="section-label">COUNT THE PALLET / THIRD SOURCE OF TRUTH</div><h2>What is actually here?</h2>{session.verdict.filter(row => row.line_ids.length).map(row => {
+      const lineId = row.line_ids[0]
+      const current = Number(session.counts[lineId] ?? row.noted)
+      return <article className="count-card" key={row.catalog_item_id}><strong>{row.description}</strong><p>Ordered {row.ordered} · Note {row.noted} {row.unit}</p><div className="count-stepper"><button disabled={busy || approved || current <= 0} onClick={() => void count(lineId, String(current - 1))} aria-label={`Count one fewer ${row.description}`}>−</button><span>{current}</span><button disabled={busy || approved} onClick={() => void count(lineId, String(current + 1))} aria-label={`Count one more ${row.description}`}>+</button></div><div className="count-links"><button onClick={() => setProof(lineId)}>View source</button><button disabled={busy || approved} onClick={() => void count(lineId, null)}>Skip count</button></div>{Number(row.shortage) > 0 && <small className="problem-value">Short {row.shortage} {row.unit}</small>}{Number(row.note_overstated) > 0 && <small className="problem-value">Note overstated by {row.note_overstated}</small>}</article>
+    })}</section>}
+    <div className="evidence-table"><div className="section-label">SOURCE COMPARISON</div>{result.discrepancies.map(item => <details key={item.catalog_item_id}><summary><strong>{item.description}</strong><span className="problem-value">{item.difference} {item.unit}</span></summary><div className="evidence-detail"><span>Ordered {item.ordered_quantity} {item.unit}</span><span>Received {item.delivered_quantity} {item.unit}</span>{item.evidence.map((source, index) => <code key={index}>{source}</code>)}{result.line_items.filter(line => item.evidence.some(source => source.includes(line.id))).map(line => <button key={line.id} className="proof-link" onClick={() => setProof(line.id)}>Proof: {line.id.split('-').at(-1)}</button>)}</div></details>)}</div>
     {result.warnings.length > 0 && <p className="warning-note">{result.warnings.join(' · ')}</p>}
     {result.claim && <div className="claim-actions"><button className="primary-action" onClick={() => setClaimOpen(!claimOpen)}>{claimOpen ? 'Hide claim' : 'Review claim'}</button></div>}
-    {claimOpen && result.claim && <section className="claim-paper"><div className="section-label">SUPPLIER CLAIM / {result.claim.status.toUpperCase()}</div><h2>Delivery discrepancy</h2><p>Documented shortage from reconciliation {result.id}.</p>{result.claim.discrepancies.map(item => <p key={item.catalog_item_id}>{item.description}: ordered {item.ordered_quantity} {item.unit}, delivered {item.delivered_quantity} {item.unit}, difference {item.difference} {item.unit}.</p>)}<small>No message has been sent to the supplier.</small>{!approved && <button className="primary-action" disabled={busy || result.status !== 'ready'} onClick={() => void approve()}>{busy ? 'Approving…' : 'Approve claim'}</button>}</section>}
+    {claimOpen && result.claim && <section className="claim-paper"><div className="section-label">SUPPLIER CLAIM / {result.claim.status.toUpperCase()}</div><h2>Delivery discrepancy</h2><p>Documented shortage from reconciliation {result.id}.</p>{result.claim.discrepancies.map(item => <p key={item.catalog_item_id}>{item.description}: ordered {item.ordered_quantity} {item.unit}, received {item.delivered_quantity} {item.unit}, difference {item.difference} {item.unit}.</p>)}<p className="claim-amount">{claimCents === null ? 'Price unknown' : `€${(claimCents / 100).toFixed(2)} claim value`}</p><small>SHA-256 {session.claim_fingerprint?.slice(0, 12)}…{session.claim_fingerprint?.slice(-8)} · Created {new Date(result.claim.created_at).toLocaleString()}</small><small>No message has been sent to the supplier.</small>{!approved && <button className="primary-action" disabled={busy || result.status !== 'ready'} onClick={() => void approve()}>{busy ? 'Approving…' : 'Approve claim'}</button>}</section>}
     {isDock && <p className="dock-note">Updates appear on the office screen instantly.</p>}
+    {proofLine && <ProofSheet result={result} line={proofLine} onClose={() => setProof(null)} />}
   </section>
 }
 

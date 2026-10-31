@@ -28,6 +28,7 @@ export interface LineItem {
   unit: string
   unit_price: string | null
   page: number | null
+  bbox: [number, number, number, number] | null
   corrected: boolean
 }
 

@@ -1,19 +1,23 @@
 """Live, process-local pairing around the existing reconciliation pipeline."""
 
 import asyncio
+import hashlib
 import json
 import socket
 import uuid
 from datetime import UTC, datetime
+from decimal import Decimal
 
 from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.api.reconciliations import _read
-from app.schemas.domain import Corrections, DocumentKind, MatchChoice, MatchStatus
+from app.schemas.domain import Corrections, Discrepancy, DocumentKind, MatchChoice, MatchStatus
 from app.services import claims, corrections, pipeline, store
+from app.services.counting import calculate
 from app.services.extract import ExtractionError
+from app.services.match import normalize_unit
 
 router = APIRouter(prefix="/session", tags=["session"])
 
@@ -35,13 +39,17 @@ def create_session() -> dict:
     session_id = uuid.uuid4().hex[:12]
     session = {"id": session_id, "events": [], "aliases": {}, "rejected": [],
                "counts": {}, "signatures": {}, "claims": [], "deliveries": [],
-               "purchase_order": None, "delivery_note": None, "reconciliation_id": None}
+               "purchase_order": None, "delivery_note": None, "reconciliation_id": None,
+               "verdict": []}
     store.state.sessions[session_id] = session
     return public_session(session)
 
 
 def public_session(session: dict) -> dict:
-    return {key: value for key, value in session.items() if key not in {"purchase_order", "delivery_note"}}
+    public = {key: value for key, value in session.items() if key not in {"purchase_order", "delivery_note"}}
+    rec = store.get_reconciliation(session["reconciliation_id"]) if session["reconciliation_id"] else None
+    public["claim_fingerprint"] = hashlib.sha256(rec.claim.model_dump_json().encode()).hexdigest() if rec and rec.claim else None
+    return public
 
 
 @router.get("/{session_id}")
@@ -95,6 +103,7 @@ async def upload(session_id: str, purchase_order: UploadFile | None = None,
         raise HTTPException(422, str(exc)) from exc
     session["reconciliation_id"] = rec.id
     session["deliveries"].append(rec.id)
+    _refresh_verdict(session)
     _event(session, "extracted", {"reconciliation_id": rec.id})
     questions = [m for m in rec.matches if m.status == MatchStatus.NEEDS_REVIEW and m.catalog_item_id]
     for match in questions:
@@ -107,6 +116,91 @@ class Answer(BaseModel):
     line_id: str
     catalog_item_id: str
     yes: bool
+
+
+class CountUpdate(BaseModel):
+    line_id: str
+    counted: Decimal | None = Field(default=None, ge=0)
+
+
+def _refresh_verdict(session: dict) -> None:
+    rid = session["reconciliation_id"]
+    rec = store.get_reconciliation(rid) if rid else None
+    if rec is None:
+        return
+    kind = {d.id: d.kind for d in rec.documents}
+    matches = {m.source_line_id: m for m in rec.matches if m.status == MatchStatus.MATCHED and m.catalog_item_id}
+    groups: dict[str, dict[str, list]] = {}
+    for line in rec.line_items:
+        match = matches.get(line.id)
+        if not match:
+            continue
+        group = groups.setdefault(match.catalog_item_id, {"ordered": [], "noted": []})
+        side = "ordered" if kind[line.source_document_id] == DocumentKind.PURCHASE_ORDER else "noted"
+        group[side].append(line)
+    rows = []
+    discrepancies = []
+    for item_id, group in groups.items():
+        order_lines, note_lines = group["ordered"], group["noted"]
+        if not order_lines and not note_lines:
+            continue
+        units = {normalize_unit(line.unit) for line in order_lines + note_lines}
+        if len(units) != 1:
+            continue
+        ordered = sum((line.quantity for line in order_lines), Decimal(0))
+        noted = sum((line.quantity for line in note_lines), Decimal(0))
+        has_count = any(line.id in session["counts"] for line in note_lines)
+        counted = sum((Decimal(session["counts"].get(line.id, str(line.quantity)))
+                       for line in note_lines), Decimal(0)) if has_count else None
+        prices = {line.unit_price for line in order_lines if line.unit_price is not None}
+        amount = next(iter(prices)) * 100 if len(prices) == 1 else None
+        cents = int(amount) if amount is not None and amount == amount.to_integral_value() else None
+        verdict = calculate(ordered, noted, counted, cents)
+        description = order_lines[0].description if order_lines else note_lines[0].description
+        evidence = [f"{line.source_document_id}: {line.source_text}" for line in order_lines + note_lines]
+        rows.append({"catalog_item_id": item_id, "description": description,
+                     "unit": next(iter(units)), "line_ids": [line.id for line in note_lines],
+                     **verdict.model_dump(mode="json")})
+        if verdict.received != ordered:
+            discrepancies.append(Discrepancy(catalog_item_id=item_id, description=description,
+                unit=next(iter(units)), ordered_quantity=ordered, delivered_quantity=verdict.received,
+                difference=verdict.received - ordered, evidence=evidence))
+    session["verdict"] = rows
+    with store.transaction() as conn:
+        current = store.load(conn, rid)
+        if current and current.status == "ready":
+            current.discrepancies = discrepancies
+            if discrepancies:
+                if current.claim is None:
+                    current.claim = claims.new_claim(discrepancies)
+                else:
+                    current.claim.discrepancies = discrepancies
+            else:
+                current.claim = None
+            store.save(conn, current)
+
+
+@router.post("/{session_id}/count")
+def update_count(session_id: str, update: CountUpdate) -> dict:
+    session = _session(session_id)
+    rid = session["reconciliation_id"]
+    rec = store.get_reconciliation(rid) if rid else None
+    if rec is None or rec.status == "approved":
+        raise HTTPException(409, "No editable reconciliation")
+    line = next((line for line in rec.line_items if line.id == update.line_id and
+                 any(d.id == line.source_document_id and d.kind == DocumentKind.DELIVERY_NOTE for d in rec.documents)), None)
+    if line is None:
+        raise HTTPException(404, "Delivery line not found")
+    if not any(m.source_line_id == line.id and m.status == MatchStatus.MATCHED for m in rec.matches):
+        raise HTTPException(409, "Confirm the product match before counting")
+    if update.counted is None:
+        session["counts"].pop(line.id, None)
+    else:
+        session["counts"][line.id] = str(update.counted)
+    _refresh_verdict(session)
+    _event(session, "count_updated", {"line_id": line.id, "counted": str(update.counted) if update.counted is not None else "skipped"})
+    _event(session, "verdict", {"reconciliation_id": rid})
+    return public_session(session)
 
 
 @router.post("/{session_id}/answer")
@@ -131,6 +225,7 @@ async def answer(session_id: str, answer: Answer) -> dict:
         session["rejected"].append(pair)
         rec = await corrections.apply_corrections(rid, Corrections(matches=[MatchChoice(line_id=line.id, catalog_item_id=None)]))
     _event(session, "answered", {"line_id": line.id, "yes": answer.yes, "status": rec.status})
+    _refresh_verdict(session)
     return public_session(session)
 
 
@@ -152,7 +247,8 @@ def approve(session_id: str) -> dict:
 def reset(session_id: str) -> dict:
     session = _session(session_id)
     session.update({"aliases": {}, "rejected": [], "counts": {}, "signatures": {}, "claims": [],
-                    "deliveries": [], "purchase_order": None, "delivery_note": None, "reconciliation_id": None})
+                    "deliveries": [], "purchase_order": None, "delivery_note": None, "reconciliation_id": None,
+                    "verdict": []})
     _event(session, "reset")
     return public_session(session)
 
