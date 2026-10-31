@@ -28,12 +28,12 @@ jobs:
           cache-dependency-path: backend/requirements.txt
       - run: python -m pip install -r requirements.txt
       # Ollama is mocked in tests; no model is needed in CI.
-      - run: python -m pytest -q
+      - run: python -m pytest -q --durations=15
 
   # Windows check: informational (does not block the deploy) so a Windows-only problem is visible
   # without stopping the live site from updating.
   windows:
-    name: Windows (backend tests + frontend build)
+    name: Windows (backend tests + frontend test + build)
     runs-on: windows-latest
     continue-on-error: true
     steps:
@@ -43,7 +43,7 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -r requirements.txt
         working-directory: backend
-      - run: python -m pytest -q
+      - run: python -m pytest -q --durations=15
         working-directory: backend
       - uses: pnpm/action-setup@v4
         with:
@@ -53,11 +53,13 @@ jobs:
           node-version: 24
       - run: pnpm install --frozen-lockfile
         working-directory: frontend
+      - run: pnpm test
+        working-directory: frontend
       - run: pnpm build
         working-directory: frontend
 
   frontend:
-    name: Frontend (lint + build)
+    name: Frontend (lint + test + build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -74,6 +76,7 @@ jobs:
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
+      - run: pnpm test
       - run: pnpm build
         env:
           VITE_API_URL: http://localhost:8000
