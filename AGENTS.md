@@ -1,7 +1,7 @@
 # AGENTS.md — DockProof
 
 ## Mission
-Build DockProof, a local-first delivery reconciliation assistant, as a **working five-hour hackathon MVP**. Given a purchase order, delivery note, and optionally an invoice, the system extracts line items, uses a small open-weight model to match ambiguous product descriptions, detects discrepancies with deterministic calculations, and creates a persisted, reviewable supplier claim.
+Build DockProof, a local-first delivery reconciliation assistant, as a **working four-hour hackathon MVP**. Given a purchase order, delivery note, and optionally an invoice, the system extracts line items, uses a small open-weight model to match ambiguous product descriptions, detects discrepancies with deterministic calculations, and creates a persisted, reviewable supplier claim.
 
 Success is an end-to-end workflow, not a polished mockup: **upload → extract → match → reconcile → review → approve → persist claim**.
 
@@ -141,11 +141,10 @@ Required tests:
 
 ## Hackathon execution
 - First 20 minutes: prove model availability and 10 candidate-matching cases; target ≥9/10 correct or safely rejected, zero invented IDs.
-- Hour 1: API contract, fixtures, upload, data structures.
-- Hour 2: extraction and matching.
-- Hour 3: deterministic reconciliation and persistence.
-- Hour 4: frontend integration and approval workflow.
-- Hour 5: tests, bug fixes, rehearsal, and pitch.
+- Hour 1: API contract, fixtures, upload, data structures, extraction.
+- Hour 2: matching (rules + model) and deterministic reconciliation.
+- Hour 3: persistence, claims, frontend integration, and approval workflow.
+- Hour 4: tests, bug fixes, rehearsal, and pitch.
 
 When time is short, cut invoice support, OCR, animations, and optional integrations **before** cutting the complete purchase-order-versus-delivery-note workflow.
 
@@ -158,4 +157,4 @@ When time is short, cut invoice support, OCR, animations, and optional integrati
 - When asked to implement a feature, deliver working code and report what was actually tested.
 
 ## Agent decision rule
-Before adding anything, ask: **Does this make the five-hour end-to-end demo more reliable, correct, or convincing?** If not, defer it.
+Before adding anything, ask: **Does this make the four-hour end-to-end demo more reliable, correct, or convincing?** If not, defer it.

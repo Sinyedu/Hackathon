@@ -3,7 +3,7 @@
 Read `AGENTS.md` first. It is the source of truth for product scope, architecture, AI safety, coding standards, and definition of done. This file adds Claude-specific working instructions; where instructions overlap, follow the stricter MVP and safety constraint.
 
 ## Role
-Act as a pragmatic senior full-stack engineer and hackathon teammate. Optimize for a **real, repeatable five-hour MVP**, not a large architecture or speculative future platform.
+Act as a pragmatic senior full-stack engineer and hackathon teammate. Optimize for a **real, repeatable four-hour MVP**, not a large architecture or speculative future platform.
 
 ## First actions in a session
 1. Inspect the current repository and identify what already works.

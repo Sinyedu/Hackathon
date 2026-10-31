@@ -34,7 +34,7 @@ Supplier product names are inconsistent. A strict string comparison cannot relia
 - **Matching:** normalization, RapidFuzz, and Ollama with **Qwen3 1.7B** (small open-weight model, Apache 2.0 model-family license; check the specific model distribution before redistribution).
 - **Execution:** locally on a developer laptop, without paid AI APIs or complex infrastructure.
 
-## Scope for a five-hour hackathon
+## Scope for a four-hour hackathon
 ### Must work
 - Upload a purchase order and delivery note.
 - Extract or load validated line items from those documents.
