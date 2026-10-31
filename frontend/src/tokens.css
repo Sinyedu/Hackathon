@@ -1,14 +1,23 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root {
   --paper: #fff;
-  --desk: #f3f4f6;
+  --desk: #f6f7f9;
   --ink: #0b0d12;
   --ink-2: #4b5160;
-  --rule: #e3e5ea;
+  --ink-3: #8a909c;
+  --rule: #e7e9ee;
   --cobalt: #2340ff;
+  --cobalt-ink: #1a2fd1;
   --cobalt-tint: #eef1ff;
-  --tomato: #e5372b;
-  --tomato-tint: #fdecea;
-  --font-ui: 'Inter Tight', 'Arial Narrow', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --tomato: #d23224;
+  --tomato-tint: #fdeeec;
+  --amber: #7a5100;
+  --amber-tint: #fff5dc;
+  --green: #12733f;
+  --green-tint: #e7f5ec;
+  --radius: 16px;
+  --lift: 0 1px 2px rgba(11, 13, 18, .04), 0 10px 28px -12px rgba(11, 13, 18, .14);
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --font-ui: 'Inter Tight', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }

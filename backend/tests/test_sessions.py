@@ -49,3 +49,30 @@ def test_count_replaces_note_quantity_and_updates_draft(client, monkeypatch) -> 
     rec = client.get(f"/api/reconciliations/{state['reconciliation_id']}").json()
     assert rec["claim"]["status"] == "draft"
     assert next(d for d in rec["discrepancies"] if d["catalog_item_id"] == "P001")["delivered_quantity"] == "16"
+
+
+def test_agent_imports_files_by_name(client, monkeypatch, tmp_path) -> None:
+    model_says_correct(monkeypatch)
+    monkeypatch.setenv("DOCKPROOF_FILES_DIR", str(tmp_path))
+    (tmp_path / "PO-4501 purchase order.png").write_bytes((FIXTURES / "purchase_order.png").read_bytes())
+    (tmp_path / "delivery_note.png").write_bytes((FIXTURES / "delivery_note.png").read_bytes())
+    (tmp_path / "notes.txt").write_text("not a document")
+    sid = client.post("/api/session").json()["id"]
+
+    listing = client.get(f"/api/session/{sid}/files").json()["files"]
+    assert [(f["name"], f["kind"]) for f in listing] == [("delivery_note.png", "delivery_note"),
+                                                          ("PO-4501 purchase order.png", "purchase_order")]
+
+    first = client.post(f"/api/session/{sid}/import", json={"filename": "PO-4501 purchase order.png"})
+    assert first.status_code == 200 and first.json()["reconciliation_id"] is None
+    second = client.post(f"/api/session/{sid}/import", json={"filename": "delivery_note.png"})
+    assert second.status_code == 200 and second.json()["reconciliation_id"]
+
+
+def test_import_rejects_unlisted_and_unclassified_files(client, monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("DOCKPROOF_FILES_DIR", str(tmp_path))
+    (tmp_path / "scan.png").write_bytes(b"\x89PNG")
+    sid = client.post("/api/session").json()["id"]
+    for name in ["../backend/app/main.py", "missing_delivery_note.png"]:
+        assert client.post(f"/api/session/{sid}/import", json={"filename": name, "kind": "delivery_note"}).status_code == 404
+    assert client.post(f"/api/session/{sid}/import", json={"filename": "scan.png"}).status_code == 422
