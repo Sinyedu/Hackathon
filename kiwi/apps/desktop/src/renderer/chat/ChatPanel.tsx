@@ -46,12 +46,15 @@ export function ChatPanel(props: ChatPanelProps) {
           Stop
         </button>
       )}
-      <Composer disabled={busy && !confirming} onSend={props.onSend} />
+      {props.voice && (
+        <div className="command-row">
+          <Composer disabled={busy && !confirming} onSend={props.onSend} />
+          <MicButton active={micActive} />
+        </div>
+      )}
+      {!props.voice && <Composer disabled={busy && !confirming} onSend={props.onSend} />}
       {props.voice && (
         <>
-          <div className="panel-actions">
-            <MicButton active={micActive} />
-          </div>
           <details>
             <summary>Settings</summary>
             <SettingsForm devices={props.voice.devices} />

@@ -34,7 +34,7 @@ If Ollama is not running, the fast path still works and the model path tells you
 
 ## What Kiwi can do
 
-Type or say (examples): `open github`, `search electron docs`, `search youtube lofi`, `timer 5 minutes`, `note buy milk`, `volume down`, `what time is it`, `research electron ipc best practices`, `what's on my screen`, `explain this error`, `clean up my downloads`, `weather in Sofia`, `convert 5 km to miles`, `calculate 12 * (3 + 4)`, `translate good morning to french`, `define serendipity`, `undo`. Anything else goes to the local model.
+Type or say (examples): `open github`, `open a new tab`, `search electron docs`, `search youtube lofi`, `timer 5 minutes`, `note buy milk`, `volume down`, `what time is it`, `research electron ipc best practices`, `what's on my screen`, `explain this error`, `clean up my downloads`, `weather in Sofia`, `convert 5 km to miles`, `calculate 12 * (3 + 4)`, `translate good morning to french`, `define serendipity`, `undo`. You can also chain simple actions, for example `open a new tab and then open github`. Anything else goes to the local model.
 
 Every action shows a receipt line (DONE, PLANNED, FAILED, UNDONE). Changing files, typing text or looking at the screen asks for Yes first. Files only ever change inside `~/KiwiSandbox`; "delete" means `.trash`. On first run the app seeds `~/KiwiSandbox/Downloads` with fake empty demo files.
 

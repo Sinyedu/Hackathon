@@ -32,8 +32,13 @@ export function MessageList({ messages }: { messages: ChatMessage[] }) {
   if (messages.length === 0) {
     return (
       <div className="empty">
-        <p className="empty-title">Hi, I'm Kiwi.</p>
-        <p>Try “open github”, “timer 5 minutes” or “note buy milk”.</p>
+        <p className="empty-kicker">READY WHEN YOU ARE</p>
+        <p className="empty-title">Tell me what to do.</p>
+        <p>
+          Say it naturally. I can open things, search, set timers, take notes, or do a few actions
+          in a row.
+        </p>
+        <p className="empty-example">“Open a new tab and search for cozy cafés.”</p>
       </div>
     );
   }

@@ -7,7 +7,7 @@ export function MicButton({ active }: { active: boolean }) {
       className="btn btn--ghost"
       type="button"
       aria-pressed={active}
-      aria-label="Hold to talk"
+      aria-label="Hold to talk to Kiwi"
       onPointerDown={() => window.kiwi.voice.pushStart()}
       onPointerUp={() => window.kiwi.voice.pushEnd()}
       onPointerLeave={active ? () => window.kiwi.voice.pushEnd() : noop}
@@ -18,7 +18,7 @@ export function MicButton({ active }: { active: boolean }) {
         if (event.key === ' ') window.kiwi.voice.pushEnd();
       }}
     >
-      {active ? 'Listening…' : 'Hold to talk'}
+      {active ? 'Listening…' : 'Talk'}
     </button>
   );
 }

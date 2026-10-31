@@ -29,7 +29,17 @@
     "lets",
     "now"
   ],
-  "trailingFillers": ["please", "pls", "for me", "now", "thanks", "thank you", "right now"],
+  "trailingFillers": [
+    "please",
+    "pls",
+    "for me",
+    "now",
+    "thanks",
+    "thank you",
+    "right now",
+    "in a new tab",
+    "in new tab"
+  ],
   "numberWords": {
     "a": 1,
     "an": 1,
@@ -56,6 +66,17 @@
     "hours": ["hour", "hours", "hr", "hrs", "h"]
   },
   "commands": [
+    {
+      "id": "new-tab",
+      "tool": "open_blank_tab",
+      "patterns": [
+        "open a new tab",
+        "open new tab",
+        "open a blank tab",
+        "open a browser tab",
+        "new tab"
+      ]
+    },
     {
       "id": "search-youtube",
       "tool": "web_search",
@@ -328,6 +349,9 @@
       "id": "open",
       "tool": "open",
       "patterns": [
+        "open a new tab to {target}",
+        "open a new tab for {target}",
+        "open a tab to {target}",
         "open {target}",
         "launch {target}",
         "start {target}",

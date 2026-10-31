@@ -26,12 +26,13 @@ export function Composer({ disabled = false, onSend }: ComposerProps) {
         className="composer-input"
         value={text}
         disabled={disabled}
-        placeholder="Ask Kiwi to do something"
+        placeholder="Tell Kiwi what to do…"
+        autoFocus
         autoComplete="off"
         onChange={(event) => setText(event.target.value)}
       />
       <button className="btn" type="submit" disabled={disabled || text.trim() === ''}>
-        Send
+        Do it
       </button>
     </form>
   );

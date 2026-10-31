@@ -6,6 +6,14 @@ const receipts = (events: AgentEvent[]): string[] =>
   events.flatMap((event) => (event.type === 'receipt' ? [`${event.status}:${event.text}`] : []));
 
 describe('agent fast path', () => {
+  it('runs a known multi-action request in order without the model', async () => {
+    const { agent, platform, llm, events } = createTestAgent();
+    await agent.run('open a new tab and then open github');
+    expect(platform.calls).toEqual(['openUrl:about:blank', 'openUrl:https://github.com/']);
+    expect(llm.requests).toHaveLength(0);
+    expect(receipts(events)).toEqual(['DONE:Opened a new browser tab', 'DONE:Opened github.com']);
+  });
+
   it('opens a site without calling the model', async () => {
     const { agent, platform, llm, events } = createTestAgent();
     await agent.run('open github');

@@ -8,6 +8,7 @@ import { sortFolder, undoMoves } from './sort-folder';
 import { clipboardRead, clipboardWrite } from './clipboard';
 import { getTime, listAppsAllowed } from './info';
 import { openApp } from './open-app';
+import { openBlankTab } from './open-blank-tab';
 import { openUrl } from './open-url';
 import { setTimer, cancelTimer } from './set-timer';
 import { setVolume } from './set-volume';
@@ -38,6 +39,7 @@ export function createRegistry(tools: ToolDefinition[]): ToolRegistry {
 export const defaultRegistry = (): ToolRegistry =>
   createRegistry([
     openApp,
+    openBlankTab,
     openUrl,
     webSearch,
     setTimer,

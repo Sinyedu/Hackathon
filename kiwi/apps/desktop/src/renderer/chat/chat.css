@@ -59,9 +59,20 @@
 }
 .empty-title {
   color: var(--text);
-  font-size: var(--text-lg);
+  font-size: 1.5rem;
   font-weight: 800;
-  margin: 0;
+  margin: 0 0 var(--space-2);
+}
+.empty-kicker {
+  margin: 0 0 var(--space-2);
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.empty-example {
+  color: var(--text);
+  font-style: italic;
 }
 
 .msg {
@@ -137,6 +148,16 @@
 .composer {
   display: flex;
   gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+}
+.command-row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+.command-row .btn--ghost {
+  min-width: 54px;
 }
 .composer-input {
   flex: 1;
@@ -243,11 +264,6 @@
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
-.panel-actions {
-  display: flex;
-  gap: var(--space-2);
-}
-
 .proof {
   display: block;
   max-width: 160px;
