@@ -18,7 +18,7 @@ Unimplemented handlers return 501; services raise `NotImplementedError`. Replace
 |---|---|---|---|
 | `services/extract.py` | Image/PDF -> RapidOCR -> LineItems with evidence | backend | done (not yet wired to the API) |
 | `services/match.py` | rules, then Qwen candidate selection (`scripts/eval_matching.py` = live check) | AI | done |
-| `services/reconcile.py` | pure Decimal discrepancy maths | backend | stub |
+| `services/reconcile.py` | pure Decimal discrepancy maths; returns `ReconcileResult` (discrepancies, unresolved line ids, warnings) | backend | done |
 | `services/claims.py` | draft/approve claim, audit log | backend | stub |
 | `services/ollama.py` | async Ollama client | AI | done |
 | `core/db.py` | sqlite3 + schema (`init_db`) | backend | done (not yet called at startup) |
