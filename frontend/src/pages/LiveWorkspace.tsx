@@ -1,5 +1,6 @@
 import { FlaskConical, Mic, ScrollText } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
+import KiwiDock from '../components/KiwiDock'
 import LiveDot from '../components/LiveDot'
 import DocumentSheet, { type SheetTab } from '../components/docs/DocumentSheet'
 import { useAgent } from '../hooks/useAgent'
@@ -47,7 +48,7 @@ export default function LiveWorkspace() {
 
   return <div className={`app${isDock ? ' app--dock' : ''}`}>
     <header className="topbar">
-      <a className="wordmark" href={hrefOf('/')} onClick={(event) => { event.preventDefault(); go(hrefOf('/')) }}><span className="wordmark__mark" aria-hidden /> DockProof</a>
+      <a className="wordmark" href={hrefOf('/')} onClick={(event) => { event.preventDefault(); go(hrefOf('/')) }}><span className="wordmark__mark" aria-hidden /> DockProof <small>Kiwi assistant</small></a>
       <nav className="tabs" aria-label="Sections">
         {TABS.map(([to, label, Icon]) => <a key={to} href={hrefOf(to)} aria-current={page === to ? 'page' : undefined} onClick={(event) => { event.preventDefault(); go(hrefOf(to)) }}><Icon size={20} aria-hidden />{label}</a>)}
       </nav>
@@ -70,5 +71,6 @@ export default function LiveWorkspace() {
             : <DetailsPage session={session} result={result} refresh={refresh} onError={setError} isDock={isDock} />}
       </main>}
     {sheet && result && <DocumentSheet result={result} tab={sheet} onTab={setSheet} onClose={() => setSheet(null)} onExport={agent.exportBrief} />}
+    <KiwiDock phase={agent.phase} onOpenAgent={() => go(hrefOf('/'))} onShowDocuments={() => setSheet('compare')} hasDocuments={Boolean(result)} />
   </div>
 }

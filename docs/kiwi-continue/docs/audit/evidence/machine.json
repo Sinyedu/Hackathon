@@ -1,0 +1,11 @@
+{
+  "measuredDate": "2026-11-01",
+  "os": "Microsoft Windows 11 Pro",
+  "osVersion": "10.0.26200",
+  "cpu": "AMD Ryzen 5 9600X 6-Core Processor",
+  "logicalProcessors": 12,
+  "ramGiB": 31.07,
+  "gpu": ["AMD Radeon RX 9060 XT", "AMD Radeon(TM) Graphics"],
+  "backend": {"port":8000,"pid":45336,"rssBytes":435208192,"launcherPid":34160,"launcherRssBytes":4534272},
+  "source": "Read-only Get-CimInstance and Get-Process outside sandbox. CPU/RAM/GPU are demo workstation measurements; no low-spec second machine was available."
+}

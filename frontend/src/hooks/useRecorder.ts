@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { traceSpan, voiceRequestId } from '../lib/trace'
 
 const MAX_MS = 30_000
 
 /** Tap-to-record microphone capture. Needs HTTPS or localhost (browser rule for getUserMedia). */
-export function useRecorder(onFinished: (audio: Blob) => void) {
+export function useRecorder(onFinished: (audio: Blob, requestId: string) => void) {
   const [recording, setRecording] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const recorder = useRef<MediaRecorder | null>(null)
@@ -29,6 +30,8 @@ export function useRecorder(onFinished: (audio: Blob) => void) {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const chunks: Blob[] = []
       const rec = new MediaRecorder(stream)
+      const requestId = voiceRequestId()
+      const captureStart = performance.now()
       const audio = new AudioContext()
       const analyser = audio.createAnalyser()
       analyser.fftSize = 256
@@ -50,7 +53,8 @@ export function useRecorder(onFinished: (audio: Blob) => void) {
         void audio.close()
         stream.getTracks().forEach((t) => t.stop())
         setRecording(false)
-        if (chunks.length > 0) callback.current(new Blob(chunks, { type: rec.mimeType }))
+        traceSpan('capture', captureStart, requestId)
+        if (chunks.length > 0) callback.current(new Blob(chunks, { type: rec.mimeType }), requestId)
       }
       recorder.current = rec
       rec.start()

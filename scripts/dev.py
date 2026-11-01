@@ -47,7 +47,7 @@ def setup() -> None:
     if not env.exists():
         env.write_text((BACKEND / ".env.example").read_text())
         print("Created backend/.env from .env.example")
-    print("\nSetup done. Next: `ollama pull qwen3:1.7b` and `ollama pull qwen3:4b-instruct-2507-q4_K_M`, then `python scripts/dev.py`.")
+    print("\nSetup done. Next: `ollama pull qwen3:1.7b`, then `python scripts/dev.py`.")
 
 
 def backend_cmd(lan: bool, reload: bool = True) -> list[str]:
@@ -94,7 +94,7 @@ def doctor() -> None:
         with urllib.request.urlopen("http://localhost:11434/api/tags", timeout=3) as res:
             names = {m["name"] for m in json.load(res)["models"]}
         line(True, "Ollama is running")
-        for model in ("qwen3:1.7b", "qwen3:4b-instruct-2507-q4_K_M"):
+        for model in ("qwen3:1.7b",):
             line(model in names, f"model {model}")
     except OSError:
         line(False, "Ollama is not reachable on localhost:11434 (install from ollama.com and start it)")

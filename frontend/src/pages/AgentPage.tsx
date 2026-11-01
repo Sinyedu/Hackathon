@@ -1,9 +1,9 @@
 import { ArrowUp, Camera, FileText, Files, Mic, Square, Upload as UploadIcon, Volume2, VolumeX } from 'lucide-react'
 import { useState, type RefObject } from 'react'
 import AgentBrief from '../components/agent/AgentBrief'
+import KiwiMascot from '../components/KiwiMascot'
 import OfferCard from '../components/agent/OfferCard'
 import ProcessSteps from '../components/agent/ProcessSteps'
-import ParticleOrb from '../components/agent/ParticleOrb'
 import ReviewLines from '../components/agent/ReviewLines'
 import { PairCard } from '../components/StartPanels'
 import { Questions } from '../components/Verdict'
@@ -66,7 +66,7 @@ export default function AgentPage({ agent, fileInput, cameraInput, session, resu
           )}
           {result && <button className="btn btn--quiet btn--small" onClick={onShowDocuments}><Files size={15} aria-hidden /> View documents</button>}
         </div>
-        <ParticleOrb className="agent__orb" phase={phase} level={mic.level} pulse={agent.pulse} />
+        <KiwiMascot className="agent__kiwi" phase={phase} />
         <p className="agent__caption" aria-live="polite">
           <span>{caption.text.slice(0, caption.at)}</span><span className="agent__caption-next">{caption.text.slice(caption.at)}</span>
         </p>

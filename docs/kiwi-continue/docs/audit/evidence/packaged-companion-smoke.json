@@ -1,0 +1,122 @@
+{
+  "events": [
+    {
+      "mark": "mascot-ready",
+      "durationMs": 216.26680000000002
+    }
+  ],
+  "bounds": {
+    "x": 3268,
+    "y": 1190,
+    "width": 160,
+    "height": 190
+  },
+  "alwaysOnTop": true,
+  "provider": {
+    "ok": true,
+    "message": "qwen3:1.7b is ready on this computer.",
+    "models": [
+      "qwen3:1.7b",
+      "qwen38-agent:latest",
+      "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-Q3_K_XL",
+      "llama3.2:3b"
+    ]
+  },
+  "renderer": {
+    "mascot": true,
+    "eyes": 3,
+    "desktop": true,
+    "bodyTransparent": "rgba(0, 0, 0, 0)"
+  },
+  "processes": [
+    {
+      "cpu": {
+        "cumulativeCPUUsage": 0.382919,
+        "percentCPUUsage": 0,
+        "idleWakeupsPerSecond": 0
+      },
+      "pid": 36308,
+      "type": "Browser",
+      "creationTime": 1793532658476.015,
+      "memory": {
+        "workingSetSize": 116632,
+        "peakWorkingSetSize": 117232,
+        "privateBytes": 89172
+      },
+      "integrityLevel": "medium",
+      "sandboxed": false
+    },
+    {
+      "cpu": {
+        "cumulativeCPUUsage": 1.194331,
+        "percentCPUUsage": 0,
+        "idleWakeupsPerSecond": 0
+      },
+      "pid": 46820,
+      "type": "GPU",
+      "creationTime": 1793532658610.288,
+      "serviceName": "GPU",
+      "memory": {
+        "workingSetSize": 122464,
+        "peakWorkingSetSize": 128716,
+        "privateBytes": 105220
+      },
+      "integrityLevel": "low",
+      "sandboxed": true
+    },
+    {
+      "cpu": {
+        "cumulativeCPUUsage": 0.052002,
+        "percentCPUUsage": 0,
+        "idleWakeupsPerSecond": 0
+      },
+      "pid": 30100,
+      "type": "Utility",
+      "creationTime": 1793532658616.21,
+      "serviceName": "network.mojom.NetworkService",
+      "name": "Network Service",
+      "memory": {
+        "workingSetSize": 46080,
+        "peakWorkingSetSize": 46152,
+        "privateBytes": 13368
+      },
+      "integrityLevel": "medium",
+      "sandboxed": false
+    },
+    {
+      "cpu": {
+        "cumulativeCPUUsage": 0.133437,
+        "percentCPUUsage": 0,
+        "idleWakeupsPerSecond": 0
+      },
+      "pid": 26840,
+      "type": "Tab",
+      "creationTime": 1793532658658.21,
+      "memory": {
+        "workingSetSize": 80784,
+        "peakWorkingSetSize": 80784,
+        "privateBytes": 31152
+      },
+      "integrityLevel": "untrusted",
+      "sandboxed": true
+    }
+  ],
+  "chat": {
+    "answer": "I'm Kiwi, a warm and concise desktop companion.",
+    "elapsedMs": 3493.6999999284744
+  },
+  "audio": {
+    "voices": 5,
+    "secureContext": true,
+    "capture": true,
+    "sampleRate": 48000
+  },
+  "speech": {
+    "text": "Hey Kiwi. OpenGIT Hub.",
+    "elapsedMs": 2458.2344999999987
+  },
+  "eyeMovement": {
+    "x": "-17.99075252405533px",
+    "y": "-11.999916676753225px"
+  }
+}

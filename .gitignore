@@ -1,5 +1,7 @@
 # Dependencies / build
 node_modules/
+frontend/.pnpm-store/
+.pnpm-store/
 dist/
 .venv/
 
@@ -34,3 +36,6 @@ dock-answers/
 
 # Vercel CLI link
 .vercel/
+frontend/release/
+backend/build/
+backend/kiwi-voice.spec

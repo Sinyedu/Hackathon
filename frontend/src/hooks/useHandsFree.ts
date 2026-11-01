@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { traceSpan, voiceRequestId } from '../lib/trace'
 
 /** An utterance ends only after this much silence, so thinking pauses don't cut you off. */
 export const SILENCE_MS = 3000
@@ -14,7 +15,7 @@ export type ListenState = 'off' | 'starting' | 'listening' | 'suspended' | 'deni
  * `state` says honestly whether the microphone is actually being heard (browsers keep audio
  * suspended until the page has had a click or key press).
  */
-export function useHandsFree(enabled: boolean, paused: boolean, onUtterance: (audio: Blob) => void, silenceMs = SILENCE_MS) {
+export function useHandsFree(enabled: boolean, paused: boolean, onUtterance: (audio: Blob, requestId: string) => void, silenceMs = SILENCE_MS) {
   const [state, setState] = useState<ListenState>('starting')
   const supported = typeof MediaRecorder !== 'undefined' && window.isSecureContext && !!navigator.mediaDevices?.getUserMedia
   const [capturing, setCapturing] = useState(false)
@@ -53,11 +54,14 @@ export function useHandsFree(enabled: boolean, paused: boolean, onUtterance: (au
         const begin = () => {
           chunks = []
           const mine = new MediaRecorder(stream)
+          const requestId = voiceRequestId()
+          const captureStart = performance.now()
           rec = mine
           mine.ondataavailable = (e) => e.data.size > 0 && chunks.push(e.data)
           mine.onstop = () => {
             setCapturing(false)
-            if (Date.now() - startedAt >= MIN_MS && chunks.length > 0) handler.current(new Blob(chunks, { type: mine.mimeType }))
+            traceSpan('capture', captureStart, requestId)
+            if (Date.now() - startedAt >= MIN_MS && chunks.length > 0) handler.current(new Blob(chunks, { type: mine.mimeType }), requestId)
           }
           startedAt = Date.now()
           lastLoud = startedAt

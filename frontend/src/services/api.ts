@@ -2,11 +2,13 @@ import type { HealthResponse } from '../types/health'
 import type { CatalogItem, Corrections, Document, Reconciliation } from '../types/reconciliation'
 import type { AgentCard, AskResponse } from '../types/assistant'
 import type { Priority, RecoveryPlan, ReplacementOrder } from '../types/recovery'
+import { aiHeaders } from './aiSettings'
 
 // Unset VITE_API_URL -> same host as the page on port 8000, so a phone opening
 // http://<laptop-ip>:5173 talks to http://<laptop-ip>:8000 without extra config.
-const API_URL: string =
-  import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:8000`
+const pageProtocol = window.location.protocol === 'file:' ? 'http:' : window.location.protocol
+const pageHost = window.location.hostname || '127.0.0.1'
+const API_URL: string = import.meta.env.VITE_API_URL || `${pageProtocol}//${pageHost}:8000`
 
 export class ApiError extends Error {
   status: number
@@ -123,7 +125,7 @@ export interface Turn { role: 'user' | 'assistant'; content: string }
 export function askQuestion(reconciliationId: string, question: string, focus?: string | null, history: Turn[] = []): Promise<AskResponse> {
   return request<AskResponse>(`/api/reconciliations/${encodeURIComponent(reconciliationId)}/ask`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...aiHeaders() },
     body: JSON.stringify({ question, focus: focus ?? null, history }),
   })
 }
@@ -135,10 +137,10 @@ export type AskEvent =
   | { type: 'error'; detail: string }
 
 /** Answer sentence by sentence (NDJSON) so the agent can start speaking before the model has finished. */
-export async function askStream(reconciliationId: string, question: string, history: Turn[], onEvent: (event: AskEvent) => void, signal?: AbortSignal): Promise<void> {
+export async function askStream(reconciliationId: string, question: string, history: Turn[], onEvent: (event: AskEvent) => void, signal?: AbortSignal, requestId?: string): Promise<void> {
   const response = await fetch(`${API_URL}/api/reconciliations/${encodeURIComponent(reconciliationId)}/ask/stream`, {
     method: 'POST', signal,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...aiHeaders(), ...(requestId ? { 'X-Request-ID': requestId } : {}) },
     body: JSON.stringify({ question, history }),
   })
   if (!response.ok || !response.body) throw new ApiError(response.status, `Request failed with status ${response.status}`)
@@ -156,9 +158,9 @@ export async function askStream(reconciliationId: string, question: string, hist
 }
 
 /** Local Whisper speech-to-text. Returns the transcript so the user can see what was heard. */
-export async function transcribeAudio(audio: Blob): Promise<string> {
+export async function transcribeAudio(audio: Blob, requestId?: string): Promise<string> {
   const form = new FormData()
   const extension = audio.type.includes('mp4') ? 'mp4' : audio.type.includes('ogg') ? 'ogg' : 'webm'
   form.append('audio', audio, `speech.${extension}`)
-  return (await request<{ text: string }>('/api/voice/transcribe', { method: 'POST', body: form })).text
+  return (await request<{ text: string }>('/api/voice/transcribe', { method: 'POST', body: form, headers: requestId ? { 'X-Request-ID': requestId } : undefined })).text
 }

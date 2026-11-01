@@ -212,7 +212,7 @@ def _models() -> list[str | None]:
 
 
 async def answer(rec: Reconciliation, plans: list[RecoveryPlan], question: str, focus_id: str | None = None,
-                 history: list[Turn] | None = None) -> tuple[str, list[Document], str | None, bool]:
+                 history: list[Turn] | None = None, provider: ollama.ProviderConfig | None = None) -> tuple[str, list[Document], str | None, bool]:
     """Returns (answer, source scans, card the answer is about, grounded). Raises OllamaError if the model is down.
 
     grounded=False means the model's wording was rejected (it contained numbers not in the data) and the
@@ -220,12 +220,13 @@ async def answer(rec: Reconciliation, plans: list[RecoveryPlan], question: str, 
     """
     ctx = prepare(rec, plans, question, focus_id, history or [])
     reply = ""
-    for index, model in enumerate(_models()):
+    models = [None] if provider else _models()
+    for index, model in enumerate(models):
         try:
-            reply = clean_answer(await ollama.chat(ctx.messages, timeout=120, model=model))
+            reply = clean_answer(await ollama.chat(ctx.messages, timeout=120, model=model, provider=provider))
             break
         except ollama.OllamaError:
-            if index == len(_models()) - 1:
+            if index == len(models) - 1:
                 raise
     if not reply:
         raise ollama.OllamaError("The model returned an empty answer")
@@ -235,7 +236,7 @@ async def answer(rec: Reconciliation, plans: list[RecoveryPlan], question: str, 
 
 
 async def answer_stream(rec: Reconciliation, plans: list[RecoveryPlan], question: str, focus_id: str | None = None,
-                        history: list[Turn] | None = None) -> AsyncIterator[dict]:
+                        history: list[Turn] | None = None, provider: ollama.ProviderConfig | None = None) -> AsyncIterator[dict]:
     """Same answer, delivered sentence by sentence so the UI can start speaking at once.
 
     Each sentence is checked on its own before it is sent; if one contains a number that is not in the data,
@@ -246,10 +247,10 @@ async def answer_stream(rec: Reconciliation, plans: list[RecoveryPlan], question
     buffer, sent = "", 0
 
     async def pieces(model: str | None) -> AsyncIterator[str]:
-        async for piece in ollama.chat_stream(ctx.messages, model=model):
+        async for piece in ollama.chat_stream(ctx.messages, model=model, provider=provider):
             yield piece
 
-    models = _models()
+    models = [None] if provider else _models()
     for index, model in enumerate(models):
         try:
             async for piece in pieces(model):

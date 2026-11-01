@@ -56,4 +56,6 @@ if frontend_dist.exists():
     def frontend(path: str) -> FileResponse:
         if path.startswith("api/"):
             raise HTTPException(404, "Not found")
+        if path == "kiwi-mascot.svg":
+            return FileResponse(frontend_dist / path, media_type="image/svg+xml")
         return FileResponse(frontend_dist / "index.html")

@@ -1,0 +1,10 @@
+{
+  "fixture": "Synthetic Windows SAPI voice, not human recording",
+  "frozenExecutable": "C:\\coding project\\Hackathon-Kiwi\\Hackathon\\backend\\dist\\kiwi-voice\\kiwi-voice.exe",
+  "offline": true,
+  "status": 200,
+  "authorizationGuard": 401,
+  "elapsedMs": 2038.1878,
+  "transcript": "Hey Kiwi. OpenGIT Hub.",
+  "wakeCommand": "OpenGIT Hub."
+}

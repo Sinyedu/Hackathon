@@ -1,0 +1,228 @@
+{
+  "date": "2026-11-01T11:38:55",
+  "sampleWindowSeconds": 10,
+  "processCpu": [
+    {
+      "pid": 43680,
+      "name": "python.exe",
+      "oneCorePercent": 0.0,
+      "lastRssMiB": 4.70703125
+    },
+    {
+      "pid": 40548,
+      "name": "node.exe",
+      "oneCorePercent": 0.0,
+      "lastRssMiB": 58.90625
+    },
+    {
+      "pid": 33644,
+      "name": "electron.exe",
+      "oneCorePercent": 0.1562293385472078,
+      "lastRssMiB": 52.12890625
+    },
+    {
+      "pid": 34160,
+      "name": "python.exe",
+      "oneCorePercent": 0.0,
+      "lastRssMiB": 4.32421875
+    },
+    {
+      "pid": 38928,
+      "name": "python.exe",
+      "oneCorePercent": 0.0,
+      "lastRssMiB": 4.6796875
+    },
+    {
+      "pid": 46160,
+      "name": "electron.exe",
+      "oneCorePercent": 0.1562293385472078,
+      "lastRssMiB": 111.3359375
+    },
+    {
+      "pid": 44408,
+      "name": "electron.exe",
+      "oneCorePercent": 0.0,
+      "lastRssMiB": 113.203125
+    }
+  ],
+  "samples": [
+    {
+      "pid": 33644,
+      "name": "electron.exe",
+      "ts": 1793529520.5728118,
+      "rssBytes": 54644736,
+      "cpuSeconds": 0.09375
+    },
+    {
+      "pid": 34160,
+      "name": "python.exe",
+      "ts": 1793529520.5728118,
+      "rssBytes": 4534272,
+      "cpuSeconds": 0.0
+    },
+    {
+      "pid": 38928,
+      "name": "python.exe",
+      "ts": 1793529520.5728118,
+      "rssBytes": 4907008,
+      "cpuSeconds": 0.015625
+    },
+    {
+      "pid": 40548,
+      "name": "node.exe",
+      "ts": 1793529520.5728118,
+      "rssBytes": 61755392,
+      "cpuSeconds": 0.03125
+    },
+    {
+      "pid": 43680,
+      "name": "python.exe",
+      "ts": 1793529520.5728118,
+      "rssBytes": 4968448,
+      "cpuSeconds": 0.0
+    },
+    {
+      "pid": 44408,
+      "name": "electron.exe",
+      "ts": 1793529520.5728118,
+      "rssBytes": 118681600,
+      "cpuSeconds": 0.140625
+    },
+    {
+      "pid": 46160,
+      "name": "electron.exe",
+      "ts": 1793529520.5728118,
+      "rssBytes": 116637696,
+      "cpuSeconds": 0.78125
+    },
+    {
+      "pid": 33644,
+      "name": "electron.exe",
+      "ts": 1793529525.573846,
+      "rssBytes": 54644736,
+      "cpuSeconds": 0.109375
+    },
+    {
+      "pid": 34160,
+      "name": "python.exe",
+      "ts": 1793529525.573846,
+      "rssBytes": 4534272,
+      "cpuSeconds": 0.0
+    },
+    {
+      "pid": 38928,
+      "name": "python.exe",
+      "ts": 1793529525.573846,
+      "rssBytes": 4907008,
+      "cpuSeconds": 0.015625
+    },
+    {
+      "pid": 40548,
+      "name": "node.exe",
+      "ts": 1793529525.573846,
+      "rssBytes": 61767680,
+      "cpuSeconds": 0.03125
+    },
+    {
+      "pid": 43680,
+      "name": "python.exe",
+      "ts": 1793529525.573846,
+      "rssBytes": 4935680,
+      "cpuSeconds": 0.0
+    },
+    {
+      "pid": 44408,
+      "name": "electron.exe",
+      "ts": 1793529525.573846,
+      "rssBytes": 118681600,
+      "cpuSeconds": 0.140625
+    },
+    {
+      "pid": 46160,
+      "name": "electron.exe",
+      "ts": 1793529525.573846,
+      "rssBytes": 116686848,
+      "cpuSeconds": 0.796875
+    },
+    {
+      "pid": 33644,
+      "name": "electron.exe",
+      "ts": 1793529530.5741343,
+      "rssBytes": 54661120,
+      "cpuSeconds": 0.109375
+    },
+    {
+      "pid": 34160,
+      "name": "python.exe",
+      "ts": 1793529530.5741343,
+      "rssBytes": 4534272,
+      "cpuSeconds": 0.0
+    },
+    {
+      "pid": 38928,
+      "name": "python.exe",
+      "ts": 1793529530.5741343,
+      "rssBytes": 4907008,
+      "cpuSeconds": 0.015625
+    },
+    {
+      "pid": 40548,
+      "name": "node.exe",
+      "ts": 1793529530.5741343,
+      "rssBytes": 61767680,
+      "cpuSeconds": 0.03125
+    },
+    {
+      "pid": 43680,
+      "name": "python.exe",
+      "ts": 1793529530.5741343,
+      "rssBytes": 4935680,
+      "cpuSeconds": 0.0
+    },
+    {
+      "pid": 44408,
+      "name": "electron.exe",
+      "ts": 1793529530.5741343,
+      "rssBytes": 118702080,
+      "cpuSeconds": 0.140625
+    },
+    {
+      "pid": 46160,
+      "name": "electron.exe",
+      "ts": 1793529530.5741343,
+      "rssBytes": 116744192,
+      "cpuSeconds": 0.796875
+    }
+  ],
+  "bundle": [
+    {
+      "file": "frontend\\dist\\agents.png",
+      "bytes": 1300814
+    },
+    {
+      "file": "frontend\\dist\\dockproofidea3.png",
+      "bytes": 1566707
+    },
+    {
+      "file": "frontend\\dist\\frontendLaptop.png",
+      "bytes": 1664051
+    },
+    {
+      "file": "frontend\\dist\\index.html",
+      "bytes": 484
+    },
+    {
+      "file": "frontend\\dist\\kiwi-mascot.svg",
+      "bytes": 2402
+    },
+    {
+      "file": "frontend\\dist\\assets\\index-B1CkUXDK.css",
+      "bytes": 60609
+    },
+    {
+      "file": "frontend\\dist\\assets\\index-BzE5ZROJ.js",
+      "bytes": 337788
+    }
+  ],
+  "note": "Workspace command-line match only; all Electron subprocesses are in electron.json. Not a wake-armed or 10-minute leak test."
+}

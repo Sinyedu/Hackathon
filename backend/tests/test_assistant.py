@@ -187,18 +187,16 @@ def test_numbers_grounded_helper() -> None:
     assert assistant.numbers_grounded("no figures here", "{}")
 
 
-def test_assistant_uses_its_own_model_and_falls_back(client, monkeypatch) -> None:
+def test_assistant_uses_the_lightweight_default_model(client, monkeypatch) -> None:
     rid = make_rec(client, monkeypatch)
     used: list[str | None] = []
 
     async def chat(messages, **kwargs):
         used.append(kwargs.get("model"))
-        if kwargs.get("model"):
-            raise ollama.OllamaError("model not found")
         return "Tomatoes are short by 6 cases."
     monkeypatch.setattr(ollama, "chat", chat)
     res = client.post(f"/api/reconciliations/{rid}/ask", json={"question": "what is missing?"})
-    assert res.status_code == 200 and used == ["qwen3:4b-instruct-2507-q4_K_M", None]
+    assert res.status_code == 200 and used == ["qwen3:1.7b"]
 
 
 def capture_all(monkeypatch, reply="Tomatoes are short by 6 cases."):

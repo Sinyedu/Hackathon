@@ -20,7 +20,7 @@ const RULES: [Intent, RegExp][] = [
 ]
 
 /** Drops a spoken wake phrase like "hey agent," so it does not get in the way of the command. */
-export const stripWake = (text: string) => text.replace(/^\s*(hey|hi|ok|okay)[\s,]+(agent|dock ?proof)[\s,.!:]*/i, '').trim()
+export const stripWake = (text: string) => text.replace(/^\s*(hey|hi|ok|okay)[\s,]+(kiwi|agent|dock ?proof)[\s,.!:]*/i, '').trim()
 
 export function intentOf(text: string): Intent {
   return RULES.find(([, pattern]) => pattern.test(text))?.[0] ?? 'ask'

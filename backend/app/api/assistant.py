@@ -2,7 +2,7 @@
 
 import json
 
-from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi import APIRouter, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
@@ -32,6 +32,33 @@ class TranscriptResponse(BaseModel):
     text: str
 
 
+def provider_from_request(request: Request) -> ollama.ProviderConfig | None:
+    """Read optional per-browser settings without persisting the user's key."""
+    raw_provider = request.headers.get("x-kiwi-provider")
+    # No headers means a normal server-configured request. This preserves the backend's
+    # assistant-model fallback and keeps the browser override opt-in.
+    if not raw_provider:
+        return None
+    provider = raw_provider.lower().strip()
+    if provider not in {"ollama", "openai"}:
+        raise HTTPException(400, "Unknown AI provider")
+    if provider == "ollama":
+        return ollama.ProviderConfig(
+            provider="ollama",
+            base_url=request.headers.get("x-kiwi-base-url") or None,
+            model=request.headers.get("x-kiwi-model") or None,
+        )
+    key = request.headers.get("x-kiwi-api-key", "").strip()
+    if not key:
+        raise HTTPException(400, "Add your personal API key in Kiwi's dashboard first")
+    return ollama.ProviderConfig(
+        provider="openai",
+        base_url=request.headers.get("x-kiwi-base-url") or None,
+        model=request.headers.get("x-kiwi-model") or None,
+        api_key=key,
+    )
+
+
 @router.get("/reconciliations/{reconciliation_id}/cards", response_model=list[assistant.Card])
 def cards(reconciliation_id: str) -> list[assistant.Card]:
     rec = store.get_reconciliation(reconciliation_id)
@@ -41,7 +68,7 @@ def cards(reconciliation_id: str) -> list[assistant.Card]:
 
 
 @router.post("/reconciliations/{reconciliation_id}/ask", response_model=AskResponse)
-async def ask(reconciliation_id: str, body: AskRequest) -> AskResponse:
+async def ask(reconciliation_id: str, body: AskRequest, request: Request) -> AskResponse:
     rec = store.get_reconciliation(reconciliation_id)
     if rec is None:
         raise HTTPException(404, "Reconciliation not found")
@@ -50,14 +77,14 @@ async def ask(reconciliation_id: str, body: AskRequest) -> AskResponse:
         raise HTTPException(422, "Question is empty")
     plans = recovery.get_plans_for_all(reconciliation_id)
     try:
-        reply, sources, focus, grounded = await assistant.answer(rec, plans, question, body.focus, body.history)
+        reply, sources, focus, grounded = await assistant.answer(rec, plans, question, body.focus, body.history, provider_from_request(request))
     except ollama.OllamaError as exc:
-        raise HTTPException(503, "The local AI model is not available right now") from exc
+        raise HTTPException(503, "The configured AI model is not available right now") from exc
     return AskResponse(answer=reply, sources=sources, focus=focus, grounded=grounded)
 
 
 @router.post("/reconciliations/{reconciliation_id}/ask/stream")
-async def ask_stream(reconciliation_id: str, body: AskRequest) -> StreamingResponse:
+async def ask_stream(reconciliation_id: str, body: AskRequest, request: Request) -> StreamingResponse:
     """NDJSON: one JSON event per line (meta, sentence, fallback, done, or error)."""
     rec = store.get_reconciliation(reconciliation_id)
     if rec is None:
@@ -65,13 +92,14 @@ async def ask_stream(reconciliation_id: str, body: AskRequest) -> StreamingRespo
     if not body.question.strip():
         raise HTTPException(422, "Question is empty")
     plans = recovery.get_plans_for_all(reconciliation_id)
+    provider = provider_from_request(request)
 
     async def events():
         try:
-            async for event in assistant.answer_stream(rec, plans, body.question.strip(), body.focus, body.history):
+            async for event in assistant.answer_stream(rec, plans, body.question.strip(), body.focus, body.history, provider):
                 yield json.dumps(event) + "\n"
         except ollama.OllamaError:
-            yield json.dumps({"type": "error", "detail": "The local AI model is not available right now"}) + "\n"
+            yield json.dumps({"type": "error", "detail": "The configured AI model is not available right now"}) + "\n"
 
     return StreamingResponse(events(), media_type="application/x-ndjson")
 

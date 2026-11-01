@@ -15,7 +15,7 @@ function distance(a: string, b: string): number {
 }
 
 /** Whisper writes "agent" many ways ("a gent", "Asian", "ajent"); accept close spellings. */
-const isAgent = (word: string) => distance(word, 'agent') <= 2 && word.length >= 4 || word === 'asian'
+const isAgent = (word: string) => word === 'kiwi' || distance(word, 'agent') <= 2 && word.length >= 4 || word === 'asian'
 
 /**
  * "Hey agent, what is missing?" -> "what is missing?"; a bare "Hey agent" -> ""; "Agent, ..." also counts;
@@ -27,7 +27,7 @@ export function parseWake(transcript: string): string | null {
   let used = 0
   if (OPENERS.has(clean(words[0])) && isAgent(clean(words[1]))) used = 2
   else if (clean(words[0]) === 'a' && clean(words[1]) === 'gent') used = 2
-  else if (isAgent(clean(words[0])) && clean(words[0]).length >= 5) used = 1
+  else if (clean(words[0]) === 'kiwi' || isAgent(clean(words[0])) && clean(words[0]).length >= 5) used = 1
   else return null
   return words.slice(used).join(' ').replace(/^[\s,.!?:;-]+/, '').trim()
 }

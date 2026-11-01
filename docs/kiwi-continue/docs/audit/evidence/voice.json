@@ -1,0 +1,62 @@
+{
+  "date": "2026-11-01T10:38:15.425Z",
+  "requestId": "8be065bb-04e6-4fe4-bdf1-ee6f4e2c0acf",
+  "stages": [
+    {
+      "stage": "backend_health",
+      "status": 200,
+      "durationMs": 29.958
+    },
+    {
+      "stage": "desktop_html",
+      "status": 200,
+      "durationMs": 2.9805999999999955
+    },
+    {
+      "stage": "mascot_asset",
+      "status": 200,
+      "durationMs": 1.8366000000000042
+    },
+    {
+      "stage": "ollama_health",
+      "status": 200,
+      "durationMs": 12.372
+    },
+    {
+      "stage": "ollama_small_model",
+      "status": 200,
+      "durationMs": 4251.8844
+    },
+    {
+      "stage": "asr_wav_roundtrip",
+      "status": 200,
+      "durationMs": 3555.0615
+    }
+  ],
+  "mascotIsSvg": false,
+  "wakeCases": [
+    {
+      "input": "Hey Kiwi, open GitHub",
+      "parsed": null
+    },
+    {
+      "input": "Kiwi stop",
+      "parsed": null
+    },
+    {
+      "input": "Hey agent, what is missing?",
+      "parsed": "what is missing?"
+    },
+    {
+      "input": "ordinary conversation",
+      "parsed": null
+    }
+  ],
+  "asr": {
+    "fixture": "generated 1 second silence",
+    "characters": 0,
+    "wakeRecognized": false
+  },
+  "firstDefiniteFailure": "Wake parser rejects Hey Kiwi even with a perfect transcript; live capture and recorded spoken WAV remain unverified.",
+  "capture": "Run Electron with --audit for permission/device info. No recorded command WAV is bundled. Silence test does not prove microphone capture or speech recognition."
+}

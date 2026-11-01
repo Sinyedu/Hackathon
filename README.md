@@ -1,4 +1,44 @@
-# DockProof
+# Kiwi desktop companion
+
+Kiwi lives in a small transparent window in the bottom-right corner of Windows. The supplied lime mascot breathes, blinks, follows your cursor with its eyes, and animates while listening, thinking and speaking. Click Kiwi to open the chat panel; closing the panel leaves the mascot on your desktop. Its tray icon has Show, Mute, Pause microphone and Quit controls.
+
+## Test the Windows build
+
+Open `frontend/release/Kiwi-Portable-0.1.0.exe` directly, or install `frontend/release/Kiwi-Setup-0.1.0.exe`. Both are unsigned local test builds. Windows may show an unknown-publisher/SmartScreen prompt. These executables do not require Node, pnpm, a browser dev server or system Python.
+
+On this computer Ollama and `qwen3:1.7b` are installed. Other computers need Ollama plus that model, or a personal compatible API key in Settings. Speech recognition uses a separately downloaded English model: use **Download speech model** in Settings if it is missing. Downloaded models stay outside the installer. No claim is made that model downloads work without an internet connection.
+
+- Click Kiwi to chat. Click the microphone to record; click it again to send.
+- `Ctrl+Shift+Space`: open Kiwi and toggle microphone recording.
+- `Ctrl+Shift+.`: stop speech and cancel the model request. Esc also stops inside the panel.
+- Enable **Listen for “Hey Kiwi”** in Settings for hands-free requests. Say the wake phrase and your request together. This uses local batch speech recognition; it is not an instant keyword detector and does not interrupt TTS while speaking. Use the stop hotkey to interrupt immediately.
+- Select Natural voice or original synthesized Kiwi blips. The mute button is always in the panel.
+
+Try “open GitHub and YouTube”, “search for pizza recipes”, “play lo-fi”, “open calculator”, “volume down”, “pause music”, “switch to dark mode”, “set a 25 minute timer”, or “what time is it?”. Music commands open a search page; play/pause sends media keys to the active media app. Timers require Kiwi to remain running.
+
+“Build a coffee shop landing page” drafts one standalone HTML page. Kiwi asks before generating and before writing/opening it, saves only a new folder in `Documents/KiwiProjects`, opens VS Code if installed in its standard user location, and opens the browser preview. This is a bounded page builder, not a general autonomous coding agent. It does not run generated shell commands or install packages.
+
+API keys are encrypted with Electron safeStorage in the main process, never returned to the renderer. Cloud mode sends your text and recent conversation to your chosen endpoint; it does not send screenshots, clipboard or microphone audio. Chat history is bounded in memory and resets on restart. Persistent personal memory, screen understanding, arbitrary window control and the full phase-6 coding-agent workflow are not implemented. The settings panel and assistant describe supported commands; there is no “do anything” shell execution.
+
+## Build and verify from source
+
+```powershell
+python scripts/dev.py setup
+backend/.venv/Scripts/python.exe -m pip install -r backend/requirements-build.txt
+cd frontend
+pnpm.cmd install --frozen-lockfile
+pnpm.cmd build
+pnpm.cmd test
+pnpm.cmd test:desktop
+pnpm.cmd lint
+pnpm.cmd desktop
+# Quit Kiwi before rebuilding its packaged files:
+pnpm.cmd dist
+```
+
+`pnpm dist` builds the renderer, freezes the speech service, and creates the Windows NSIS and portable executables. Icon sources are in `frontend/build`; `pnpm build:icons` regenerates them from the provided SVG using a hidden Electron window. Release binaries and model files are intentionally not committed. See `docs/QA_CHECKLIST.md` and `docs/DEMO.md` for actual checks and the demo sequence.
+
+## DockProof development workspace
 
 [![CI](https://github.com/Hizashii/Hackathon/actions/workflows/ci.yml/badge.svg)](https://github.com/Hizashii/Hackathon/actions/workflows/ci.yml)
 
@@ -6,7 +46,7 @@ AI-powered delivery reconciliation. DockProof compares a purchase order, deliver
 uses a small local open-weight model (Qwen3 1.7B via Ollama) to match differently named products,
 and uses deterministic code for quantities, prices, discrepancies and claims. Claims require human approval.
 
-> Status: working end to end: scan or upload, OCR, AI product matching, reconciliation, claims, correction and approval, plus **AutoRecover** (shortage recovery plans and draft replacement orders). See `docs/MAP.md`.
+> This original document workflow is retained for development and is not included in the standalone companion installer. Its state is process-local and clears on backend restart. See `docs/MAP.md`.
 > See `AGENTS.md`, `CLAUDE.md` and `DESCRIPTION.md` for scope and rules.
 
 ## Stack
@@ -36,6 +76,17 @@ python scripts/dev.py doctor    # shows what is installed (pnpm, Ollama, models,
 python scripts/dev.py           # runs backend (8000) and frontend (5173); Ctrl+C stops both
 ```
 
+For the companion desktop app, use Electron from `frontend/`:
+
+```bash
+cd frontend
+pnpm desktop:dev   # build then launch the desktop companion
+pnpm build
+pnpm desktop       # launch the companion from built local files
+```
+
+The companion loads local files and uses narrow Electron IPC. The speech sidecar starts only when needed, on a random loopback port with a per-launch token. Development mode uses the Python venv for that sidecar; the packaged build contains its own runtime. The separate document workspace still uses `python scripts/dev.py` and FastAPI on port 8000.
+
 On Windows run the same commands from PowerShell or cmd (`py scripts/dev.py setup` works too). Add `--lan` to reach the app from a phone on the same Wi-Fi. On Linux/macOS `make backend` / `make frontend` still work; on Windows use the script instead (the Makefile uses `.venv/bin`).
 
 <details><summary>Manual setup</summary>
@@ -61,7 +112,6 @@ Install Ollama from <https://ollama.com/download>, then:
 
 ```bash
 ollama pull qwen3:1.7b                        # ~1.4 GB: matching and recovery
-ollama pull qwen3:4b-instruct-2507-q4_K_M     # ~2.5 GB: the voice assistant's answers
 ollama run qwen3:1.7b    # optional interactive smoke test
 ```
 
@@ -92,11 +142,13 @@ New endpoints: `GET /api/suppliers`, `POST /api/reconciliations/{id}/discrepanci
 
 ## Ask by voice (the agent)
 
+Kiwi is also available as a lightweight desktop-style dock in the bottom-right corner. Open its dashboard to switch between local Ollama and a personal OpenAI-compatible key. The key is kept in the current browser session and sent only with assistant requests; it is not saved in `.env`, SQLite, or the prompt context. Use the local Ollama option for the no-cost, offline-friendly path. ChatGPT and API billing are separate, although some eligible Pro/Business plans may include API credits.
+
 **Hey agent, anywhere on the site.** Saying "Hey agent" (alone, or followed by your request) opens the agent already listening, so no click is needed. It keeps listening until you have been silent for 3 seconds. The **Hey agent** switch in the header turns this off (remembered per browser). Audio that does not start with the wake phrase is discarded and never reaches a model; transcription runs on your machine.
 
 - **Open my files**: the agent shows a paperclip. Tap it and pick your purchase order and delivery note from wherever you keep them. Reading starts the moment they are in. (Browsers do not allow a page to open a file dialog from speech alone, so one tap is needed.) Names containing "order"/"po" or "delivery"/"dn" are sorted automatically; otherwise the agent asks which is which.
 - **Walkthrough**: after a delivery is analysed the agent docks to the bottom and tours the result by voice: the headline, the two columns read from your scans, why the red rows are red, the open product question, the draft claim, the recovery option and the notes. It outlines each thing on the page and highlights the keywords it mentions. Say "walk me through it" to hear it again; the skip button stops it.
-- **Models**: speech is transcribed by open-weight Whisper (`small.en` via faster-whisper, about 480 MB, preloaded when the backend starts; set `WHISPER_MODEL`/`WHISPER_LANGUAGE` in `backend/.env`). A local Qwen3 4B model (`ASSISTANT_MODEL`, falls back to `OLLAMA_MODEL`) answers free questions from the text DockProof read. Any number in an answer that is not in the data is rejected and replaced by the stored results. Compare models with `cd backend && PYTHONPATH=. python scripts/eval_assistant.py <model> ...`.
+- **Models**: speech is transcribed by open-weight Whisper (`small.en` via faster-whisper, about 480 MB, preloaded when the backend starts; set `WHISPER_MODEL`/`WHISPER_LANGUAGE` in `backend/.env`). A local Qwen3 1.7B model (`ASSISTANT_MODEL`, falls back to `OLLAMA_MODEL`) answers free questions from the text DockProof read, keeping one small model loaded for a responsive laptop demo. Any number in an answer that is not in the data is rejected and replaced by the stored results. Kiwi's dashboard also accepts a user's own OpenAI-compatible API key for a cloud model; ChatGPT subscriptions do not provide free API credits, so Ollama is the no-cost path.
 
 **If "Hey agent" does not react**
 - The header switch shows the real state. *Click the page once*: browsers keep audio suspended until you click or press a key. *Mic blocked*: allow the microphone in the address bar. *Needs HTTPS*: use `localhost` or an https address (a plain `http://192.168...` address has no microphone).

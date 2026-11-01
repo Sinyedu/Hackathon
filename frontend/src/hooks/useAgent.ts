@@ -9,6 +9,7 @@ import { approveSession, resolveLine, type LocalFile, type Session } from '../se
 import type { Document, Reconciliation } from '../types/reconciliation'
 import type { OrbPhase } from '../components/agent/ParticleOrb'
 import { parseWake } from '../lib/wake'
+import { traceSpan, voiceRequestId } from '../lib/trace'
 import { buildWalkthrough } from '../lib/walkthrough'
 import { useAgentFiles, type PickMode } from './useAgentFiles'
 import { useHandsFree, type ListenState } from './useHandsFree'
@@ -127,7 +128,8 @@ export function useAgent({ inputs, session, result, brief, refresh, onGenerate, 
     try { await action() } catch (e) { say(`I could not do that: ${errorMessage(e)}`, { error: true }) } finally { setBusy(false) }
   }
 
-  const handle = async (raw: string) => {
+  const handle = async (raw: string, requestId = voiceRequestId()) => {
+    const routeStart = performance.now()
     const text = stripWake(raw)
     if (!text || busy) return
     add({ who: 'you', text: raw.trim() })
@@ -135,6 +137,7 @@ export function useAgent({ inputs, session, result, brief, refresh, onGenerate, 
     const answeredKind = docs.pending && kindSaid(text)
     if (answeredKind) return run(() => docs.assignPending(answeredKind))
     const intent = intentOf(text)
+    traceSpan('route', routeStart, requestId)
     if (intent === 'brief') return say(brief.spoken)
     if (intent === 'export') { exportBrief(); return say('I downloaded the briefing as a Markdown file.') }
     if (intent === 'link') return openOffer()
@@ -164,12 +167,15 @@ export function useAgent({ inputs, session, result, brief, refresh, onGenerate, 
     }
     return run(async () => {
       if (intent === 'recover') return recover(result)
-      await ask(result.id, text)
+      await ask(result.id, text, requestId)
     })
   }
 
   // The model's reply arrives sentence by sentence; each is shown and spoken as soon as it has been checked.
-  const ask = async (id: string, text: string) => {
+  const ask = async (id: string, text: string, requestId: string) => {
+    const replyStart = performance.now()
+    let firstSentence = true
+    let firstAudio = true
     const history: Turn[] = log.filter((l) => !l.error).slice(-8).map((l) => ({ role: l.who === 'you' ? 'user' : 'assistant', content: l.text.slice(0, 800) }))
     const lineId = nextId.current++
     let shown = ''
@@ -182,12 +188,16 @@ export function useAgent({ inputs, session, result, brief, refresh, onGenerate, 
     })
     const settle = () => { if (finished && pending === 0) { setSpeaking(false); setCaption((c) => ({ ...c, at: c.text.length })) } }
     const add1 = (sentence: string) => {
+      if (firstSentence) { traceSpan('llm_first_token', replyStart, requestId); firstSentence = false }
       shown = shown ? `${shown} ${sentence}` : sentence
       update()
       setCaption({ text: shown, at: shown.length })
       if (muted) return
       pending++
-      speakQueued(sentence, () => { pending--; settle() }, () => setSpeaking(true))
+      speakQueued(sentence, () => { pending--; settle() }, () => {
+        if (firstAudio) { traceSpan('tts_first_audio', replyStart, requestId); firstAudio = false }
+        setSpeaking(true)
+      })
     }
     stopSpeaking()
     await askStream(id, text, history, (event) => {
@@ -195,32 +205,37 @@ export function useAgent({ inputs, session, result, brief, refresh, onGenerate, 
       else if (event.type === 'sentence' || event.type === 'fallback') add1(event.text)
       else if (event.type === 'error') throw new Error(event.detail)
       else if (event.type === 'done') { finished = true; settle() }
-    })
+    }, undefined, requestId)
     finished = true
     settle()
     if (!shown) say('The assistant gave no answer. Please try again.', { error: true })
   }
 
-  const mic = useRecorder((audio) => {
+  const mic = useRecorder((audio, requestId) => {
+    const asrStart = performance.now()
     setBusy(true)
-    transcribeAudio(audio)
-      .then((heard) => { setBusy(false); setHeard(heard); return heard ? handle(heard) : say('I did not catch that. Try again.') })
+    transcribeAudio(audio, requestId)
+      .then((heard) => { traceSpan('asr', asrStart, requestId); setBusy(false); setHeard(heard); return heard ? handle(heard, requestId) : say('I did not catch that. Try again.') })
       .catch((e: unknown) => { setBusy(false); say(`I could not hear that: ${errorMessage(e)}`, { error: true }) })
   })
 
   // Hands-free: while the agent is open it listens for "Hey agent" and treats everything up to 3 seconds of
   // silence as one request. Speech not addressed to the agent is dropped without reaching the model.
   const followUpUntil = useRef(0)
-  const hearHandsFree = (audio: Blob) => {
+  const hearHandsFree = (audio: Blob, requestId: string) => {
+    const asrStart = performance.now()
     setBusy(true)
-    transcribeAudio(audio)
+    transcribeAudio(audio, requestId)
       .then((heard) => {
+        traceSpan('asr', asrStart, requestId)
         setBusy(false)
         setHeard(heard)
+        const wakeStart = performance.now()
         const rest = parseWake(heard)
-        if (rest === null) return Date.now() < followUpUntil.current ? handle(heard) : undefined
+        traceSpan('wake', wakeStart, requestId)
+        if (rest === null) return Date.now() < followUpUntil.current ? handle(heard, requestId) : undefined
         onWake()
-        if (rest) return handle(rest)
+        if (rest) return handle(rest, requestId)
         say('Yes boss?')
         followUpUntil.current = Date.now() + 10_000 // bare "Hey agent": the next utterance is the request
       })

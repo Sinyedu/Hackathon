@@ -1,0 +1,609 @@
+{
+  "startedAt": "2026-11-01T10:40:52.644Z",
+  "traceFile": "C:\\Users\\Luche\\AppData\\Roaming\\Electron\\logs\\trace.jsonl",
+  "marks": {
+    "appReadyMs": 24.060299999999998,
+    "windowCreatedMs": 40.7517,
+    "didFinishLoadMs": 153.7858
+  },
+  "samples": [
+    {
+      "elapsedMs": 5014.3395,
+      "processes": [
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.511687,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 43264,
+          "type": "Browser",
+          "creationTime": 1793529652506.835,
+          "memory": {
+            "workingSetSize": 113548,
+            "peakWorkingSetSize": 113548,
+            "privateBytes": 75828
+          },
+          "integrityLevel": "medium",
+          "sandboxed": false
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.549688,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 45656,
+          "type": "GPU",
+          "creationTime": 1793529652666.878,
+          "serviceName": "GPU",
+          "memory": {
+            "workingSetSize": 105484,
+            "peakWorkingSetSize": 107220,
+            "privateBytes": 107860
+          },
+          "integrityLevel": "low",
+          "sandboxed": true
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.05668,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 44596,
+          "type": "Utility",
+          "creationTime": 1793529652680.007,
+          "serviceName": "network.mojom.NetworkService",
+          "name": "Network Service",
+          "memory": {
+            "workingSetSize": 50560,
+            "peakWorkingSetSize": 50596,
+            "privateBytes": 13812
+          },
+          "integrityLevel": "medium",
+          "sandboxed": false
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.454168,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 19784,
+          "type": "Tab",
+          "creationTime": 1793529652716.651,
+          "memory": {
+            "workingSetSize": 105944,
+            "peakWorkingSetSize": 105944,
+            "privateBytes": 45044
+          },
+          "integrityLevel": "untrusted",
+          "sandboxed": true
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.122862,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 45900,
+          "type": "Utility",
+          "creationTime": 1793529652837.247,
+          "serviceName": "audio.mojom.AudioService",
+          "name": "Audio Service",
+          "memory": {
+            "workingSetSize": 80744,
+            "peakWorkingSetSize": 80744,
+            "privateBytes": 14452
+          },
+          "integrityLevel": "low",
+          "sandboxed": true
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.097112,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 40688,
+          "type": "Utility",
+          "creationTime": 1793529652839.549,
+          "serviceName": "video_capture.mojom.VideoCaptureService",
+          "name": "Video Capture",
+          "memory": {
+            "workingSetSize": 104372,
+            "peakWorkingSetSize": 104728,
+            "privateBytes": 37868
+          },
+          "integrityLevel": "medium",
+          "sandboxed": false
+        }
+      ]
+    },
+    {
+      "elapsedMs": 10028.7476,
+      "processes": [
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.637586,
+            "percentCPUUsage": 0.20922996313867248,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 43264,
+          "type": "Browser",
+          "creationTime": 1793529652506.835,
+          "memory": {
+            "workingSetSize": 113464,
+            "peakWorkingSetSize": 113616,
+            "privateBytes": 75768
+          },
+          "integrityLevel": "medium",
+          "sandboxed": false
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.735722,
+            "percentCPUUsage": 0.30916854909254343,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 45656,
+          "type": "GPU",
+          "creationTime": 1793529652666.878,
+          "serviceName": "GPU",
+          "memory": {
+            "workingSetSize": 134236,
+            "peakWorkingSetSize": 138096,
+            "privateBytes": 131400
+          },
+          "integrityLevel": "low",
+          "sandboxed": true
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.059644,
+            "percentCPUUsage": 0.004925858844429412,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 44596,
+          "type": "Utility",
+          "creationTime": 1793529652680.007,
+          "serviceName": "network.mojom.NetworkService",
+          "name": "Network Service",
+          "memory": {
+            "workingSetSize": 50708,
+            "peakWorkingSetSize": 50744,
+            "privateBytes": 13996
+          },
+          "integrityLevel": "medium",
+          "sandboxed": false
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.714065,
+            "percentCPUUsage": 0.4319223087938137,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 19784,
+          "type": "Tab",
+          "creationTime": 1793529652716.651,
+          "memory": {
+            "workingSetSize": 110424,
+            "peakWorkingSetSize": 110424,
+            "privateBytes": 49408
+          },
+          "integrityLevel": "untrusted",
+          "sandboxed": true
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.201264,
+            "percentCPUUsage": 0.13029628419766426,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 45900,
+          "type": "Utility",
+          "creationTime": 1793529652837.247,
+          "serviceName": "audio.mojom.AudioService",
+          "name": "Audio Service",
+          "memory": {
+            "workingSetSize": 80752,
+            "peakWorkingSetSize": 80752,
+            "privateBytes": 14460
+          },
+          "integrityLevel": "low",
+          "sandboxed": true
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.097494,
+            "percentCPUUsage": 0.0006348464349683255,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 40688,
+          "type": "Utility",
+          "creationTime": 1793529652839.549,
+          "serviceName": "video_capture.mojom.VideoCaptureService",
+          "name": "Video Capture",
+          "memory": {
+            "workingSetSize": 104384,
+            "peakWorkingSetSize": 104728,
+            "privateBytes": 37868
+          },
+          "integrityLevel": "medium",
+          "sandboxed": false
+        }
+      ]
+    },
+    {
+      "elapsedMs": 15040.3135,
+      "processes": [
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.782309,
+            "percentCPUUsage": 0.2406482842591948,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 43264,
+          "type": "Browser",
+          "creationTime": 1793529652506.835,
+          "memory": {
+            "workingSetSize": 113992,
+            "peakWorkingSetSize": 113992,
+            "privateBytes": 76080
+          },
+          "integrityLevel": "medium",
+          "sandboxed": false
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.857859,
+            "percentCPUUsage": 0.20309248241379432,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 45656,
+          "type": "GPU",
+          "creationTime": 1793529652666.878,
+          "serviceName": "GPU",
+          "memory": {
+            "workingSetSize": 134416,
+            "peakWorkingSetSize": 138096,
+            "privateBytes": 131244
+          },
+          "integrityLevel": "low",
+          "sandboxed": true
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.060155,
+            "percentCPUUsage": 0.0008497035116732968,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 44596,
+          "type": "Utility",
+          "creationTime": 1793529652680.007,
+          "serviceName": "network.mojom.NetworkService",
+          "name": "Network Service",
+          "memory": {
+            "workingSetSize": 50712,
+            "peakWorkingSetSize": 50744,
+            "privateBytes": 14000
+          },
+          "integrityLevel": "medium",
+          "sandboxed": false
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.991891,
+            "percentCPUUsage": 0.46197607620209125,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 19784,
+          "type": "Tab",
+          "creationTime": 1793529652716.651,
+          "memory": {
+            "workingSetSize": 115200,
+            "peakWorkingSetSize": 115200,
+            "privateBytes": 52008
+          },
+          "integrityLevel": "untrusted",
+          "sandboxed": true
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.278677,
+            "percentCPUUsage": 0.1287243648735547,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 45900,
+          "type": "Utility",
+          "creationTime": 1793529652837.247,
+          "serviceName": "audio.mojom.AudioService",
+          "name": "Audio Service",
+          "memory": {
+            "workingSetSize": 80780,
+            "peakWorkingSetSize": 80780,
+            "privateBytes": 14488
+          },
+          "integrityLevel": "low",
+          "sandboxed": true
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.097494,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 40688,
+          "type": "Utility",
+          "creationTime": 1793529652839.549,
+          "serviceName": "video_capture.mojom.VideoCaptureService",
+          "name": "Video Capture",
+          "memory": {
+            "workingSetSize": 104384,
+            "peakWorkingSetSize": 104728,
+            "privateBytes": 37868
+          },
+          "integrityLevel": "medium",
+          "sandboxed": false
+        }
+      ]
+    },
+    {
+      "elapsedMs": 20053.7531,
+      "processes": [
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.816697,
+            "percentCPUUsage": 0.05715972229563604,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 43264,
+          "type": "Browser",
+          "creationTime": 1793529652506.835,
+          "memory": {
+            "workingSetSize": 114112,
+            "peakWorkingSetSize": 114112,
+            "privateBytes": 76336
+          },
+          "integrityLevel": "medium",
+          "sandboxed": false
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.946865,
+            "percentCPUUsage": 0.14794577345091603,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 45656,
+          "type": "GPU",
+          "creationTime": 1793529652666.878,
+          "serviceName": "GPU",
+          "memory": {
+            "workingSetSize": 134416,
+            "peakWorkingSetSize": 138096,
+            "privateBytes": 114892
+          },
+          "integrityLevel": "low",
+          "sandboxed": true
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.06105,
+            "percentCPUUsage": 0.001487667815578392,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 44596,
+          "type": "Utility",
+          "creationTime": 1793529652680.007,
+          "serviceName": "network.mojom.NetworkService",
+          "name": "Network Service",
+          "memory": {
+            "workingSetSize": 50772,
+            "peakWorkingSetSize": 50772,
+            "privateBytes": 14000
+          },
+          "integrityLevel": "medium",
+          "sandboxed": false
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 1.208929,
+            "percentCPUUsage": 0.3607602044184823,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 19784,
+          "type": "Tab",
+          "creationTime": 1793529652716.651,
+          "memory": {
+            "workingSetSize": 115312,
+            "peakWorkingSetSize": 115312,
+            "privateBytes": 52024
+          },
+          "integrityLevel": "untrusted",
+          "sandboxed": true
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.359925,
+            "percentCPUUsage": 0.1350502372654215,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 45900,
+          "type": "Utility",
+          "creationTime": 1793529652837.247,
+          "serviceName": "audio.mojom.AudioService",
+          "name": "Audio Service",
+          "memory": {
+            "workingSetSize": 80784,
+            "peakWorkingSetSize": 80784,
+            "privateBytes": 14488
+          },
+          "integrityLevel": "low",
+          "sandboxed": true
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.097494,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 40688,
+          "type": "Utility",
+          "creationTime": 1793529652839.549,
+          "serviceName": "video_capture.mojom.VideoCaptureService",
+          "name": "Video Capture",
+          "memory": {
+            "workingSetSize": 104384,
+            "peakWorkingSetSize": 104728,
+            "privateBytes": 37868
+          },
+          "integrityLevel": "medium",
+          "sandboxed": false
+        }
+      ]
+    },
+    {
+      "elapsedMs": 25054.8672,
+      "processes": [
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.872273,
+            "percentCPUUsage": 0.09260597849107176,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 43264,
+          "type": "Browser",
+          "creationTime": 1793529652506.835,
+          "memory": {
+            "workingSetSize": 114208,
+            "peakWorkingSetSize": 114208,
+            "privateBytes": 76356
+          },
+          "integrityLevel": "medium",
+          "sandboxed": false
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 1.000762,
+            "percentCPUUsage": 0.08980814446245818,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 45656,
+          "type": "GPU",
+          "creationTime": 1793529652666.878,
+          "serviceName": "GPU",
+          "memory": {
+            "workingSetSize": 134412,
+            "peakWorkingSetSize": 138096,
+            "privateBytes": 114896
+          },
+          "integrityLevel": "low",
+          "sandboxed": true
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.061824,
+            "percentCPUUsage": 0.001289711878366373,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 44596,
+          "type": "Utility",
+          "creationTime": 1793529652680.007,
+          "serviceName": "network.mojom.NetworkService",
+          "name": "Network Service",
+          "memory": {
+            "workingSetSize": 50772,
+            "peakWorkingSetSize": 50772,
+            "privateBytes": 14000
+          },
+          "integrityLevel": "medium",
+          "sandboxed": false
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 1.371123,
+            "percentCPUUsage": 0.27026301062936087,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 19784,
+          "type": "Tab",
+          "creationTime": 1793529652716.651,
+          "memory": {
+            "workingSetSize": 115316,
+            "peakWorkingSetSize": 115328,
+            "privateBytes": 52024
+          },
+          "integrityLevel": "untrusted",
+          "sandboxed": true
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.46403,
+            "percentCPUUsage": 0.17346964960147218,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 45900,
+          "type": "Utility",
+          "creationTime": 1793529652837.247,
+          "serviceName": "audio.mojom.AudioService",
+          "name": "Audio Service",
+          "memory": {
+            "workingSetSize": 80784,
+            "peakWorkingSetSize": 80784,
+            "privateBytes": 14488
+          },
+          "integrityLevel": "low",
+          "sandboxed": true
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.097494,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 40688,
+          "type": "Utility",
+          "creationTime": 1793529652839.549,
+          "serviceName": "video_capture.mojom.VideoCaptureService",
+          "name": "Video Capture",
+          "memory": {
+            "workingSetSize": 104384,
+            "peakWorkingSetSize": 104728,
+            "privateBytes": 37868
+          },
+          "integrityLevel": "medium",
+          "sandboxed": false
+        }
+      ]
+    }
+  ],
+  "page": {
+    "title": "Kiwi · DockProof",
+    "url": "http://127.0.0.1:8000/",
+    "visibility": "visible",
+    "mascotPresent": true,
+    "bodyLength": 317
+  },
+  "renderer": {
+    "url": "http://127.0.0.1:8000",
+    "secureContext": true,
+    "mascotPresent": true,
+    "audio": {
+      "permission": "granted",
+      "inputs": 4,
+      "outputs": 4,
+      "contextState": "running",
+      "contextSampleRate": 48000,
+      "mediaRecorder": true,
+      "voices": 5,
+      "wakeIndicator": "Hey agent: starting…",
+      "firstFailingStage": "live capture needs a spoken microphone trial; parser rejects Hey Kiwi (see voice diagnostic)"
+    },
+    "paint": [],
+    "idleFrameCallbackFps": 179.7622499270867,
+    "idleCallbackGapsOver25ms": 0,
+    "longestTaskMs": 214,
+    "note": "rAF callback cadence is a proxy, not a DevTools paint-cost or compositor dropped-frame measurement. No microphone recording performed."
+  }
+}

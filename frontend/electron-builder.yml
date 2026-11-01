@@ -1,0 +1,34 @@
+appId: com.kiwi.companion
+productName: Kiwi
+directories:
+  output: release
+files:
+  - dist/**/*
+  - electron/main.cjs
+  - electron/preload.cjs
+  - electron/settings.cjs
+  - electron/provider.cjs
+  - electron/intent.cjs
+  - electron/actions.cjs
+  - electron/voice.cjs
+  - electron/coding.cjs
+  - build/kiwi.png
+extraResources:
+  - from: ../backend/dist/kiwi-voice
+    to: voice
+asar: true
+win:
+  icon: build/kiwi.ico
+  target:
+    - nsis
+    - portable
+  signExecutable: false
+nsis:
+  artifactName: Kiwi-Setup-${version}.${ext}
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: Kiwi
+portable:
+  artifactName: Kiwi-Portable-${version}.${ext}

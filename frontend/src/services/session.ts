@@ -1,6 +1,8 @@
 import type { Reconciliation } from '../types/reconciliation'
 
-export const API = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:8000`
+const pageProtocol = window.location.protocol === 'file:' ? 'http:' : window.location.protocol
+const pageHost = window.location.hostname || '127.0.0.1'
+export const API = import.meta.env.VITE_API_URL || `${pageProtocol}//${pageHost}:8000`
 
 export interface Session {
   id: string
