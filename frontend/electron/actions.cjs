@@ -1,5 +1,5 @@
 const { app, shell, Notification } = require('electron')
-const { execFile } = require('node:child_process')
+const { execFile, spawn } = require('node:child_process')
 const fs = require('node:fs/promises')
 const path = require('node:path')
 const timers = new Set()
@@ -11,9 +11,14 @@ function powershell(script) {
 async function execute(intent) {
   switch (intent.type) {
     case 'time': return `It's ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`
-    case 'help': return 'I can chat, open websites or apps, search the web, find music, change Windows theme, control volume and media, and set timers. I can also draft a single-page website with your approval. Try “open GitHub and YouTube”, “volume down”, or “build a coffee shop landing page”.'
+    case 'help': return 'I execute approved desktop commands: open apps, open websites or Firefox tabs, search the web, find music, change Windows theme, control volume and media, set timers, and draft a single-page website with approval.'
     case 'url': await shell.openExternal(intent.url); return `Opened ${intent.label}.`
     case 'urls': for (const url of intent.urls) await shell.openExternal(url); return `Opened ${intent.label}.`
+    case 'firefox-tab': {
+      if (process.platform !== 'win32') throw new Error('Firefox tab control is available on Windows in this build.')
+      await launchFirefox(intent.url)
+      return `Opened ${intent.label} in a new Firefox tab.`
+    }
     case 'timer': {
       if (!Number.isInteger(intent.seconds) || intent.seconds < 1 || intent.seconds > 86400) throw new Error('Choose a timer between one second and 24 hours.')
       const timer = setTimeout(() => { timers.delete(timer); new Notification({ title: 'Kiwi timer', body: 'Time is up. You did it!' }).show() }, intent.seconds * 1000)
@@ -27,7 +32,8 @@ async function execute(intent) {
         const exe = path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Microsoft VS Code', 'Code.exe')
         try { await fs.access(exe) } catch { throw new Error('VS Code is not installed in its default user location.') }
         await launch(exe)
-      } else await launch(intent.app === 'calculator' ? 'calc.exe' : 'notepad.exe')
+      } else if (intent.app === 'firefox') await launchFirefox()
+      else await launch(intent.app === 'calculator' ? 'calc.exe' : 'notepad.exe')
       return `Opened ${intent.app}.`
     }
     case 'theme':
@@ -44,9 +50,18 @@ async function execute(intent) {
     default: throw new Error('I cannot perform that desktop action yet.')
   }
 }
-function launch(exe) {
+async function launchFirefox(url) {
+  const locations = [
+    path.join(process.env.ProgramFiles || '', 'Mozilla Firefox', 'firefox.exe'),
+    path.join(process.env['ProgramFiles(x86)'] || '', 'Mozilla Firefox', 'firefox.exe'),
+    path.join(process.env.LOCALAPPDATA || '', 'Mozilla Firefox', 'firefox.exe'),
+  ]
+  const exe = locations.find((candidate) => candidate && require('node:fs').existsSync(candidate)) || 'firefox.exe'
+  await launch(exe, url ? ['-new-tab', url] : [])
+}
+function launch(exe, args = []) {
   return new Promise((resolve, reject) => {
-    const child = require('node:child_process').spawn(exe, [], { detached: true, stdio: 'ignore', windowsHide: false })
+    const child = spawn(exe, args, { detached: true, stdio: 'ignore', windowsHide: false })
     child.once('error', () => reject(new Error('That app could not be opened.')))
     child.once('spawn', () => { child.unref(); resolve() })
   })

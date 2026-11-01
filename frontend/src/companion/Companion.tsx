@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowUp, Mic, Settings2, Square, Volume2, VolumeX, X } from 'lucide-react'
+import { ArrowUp, Mic, Settings2, Square, X } from 'lucide-react'
 import { useRecorder } from '../hooks/useRecorder'
-import { speak, stopSpeaking } from '../lib/speak'
 import { desktop, type Preferences, type Turn } from './desktop'
-import { blipReply, stopBlips } from './blips'
 import LivingKiwi from './LivingKiwi'
 import { useWakeVoice } from './useWakeVoice'
 import Settings from './Settings'
@@ -13,23 +11,15 @@ const initial: Preferences = { provider: 'ollama', model: 'qwen3:1.7b', baseUrl:
 export default function Companion() {
   const [expanded, setExpanded] = useState(false), [settingsOpen, setSettingsOpen] = useState(false)
   const [preferences, setPreferences] = useState(initial), [text, setText] = useState(''), [phase, setPhase] = useState('idle')
-  const [messages, setMessages] = useState<Turn[]>([]), [reply, setReply] = useState(''), [note, setNote] = useState('Click me. Let’s make something happen.')
+  const [messages, setMessages] = useState<Turn[]>([]), [reply, setReply] = useState(''), [note, setNote] = useState('Say “Hey Kiwi” to give a command.')
   const [paused, setPaused] = useState(false)
   const [preferencesReady, setPreferencesReady] = useState(false)
-  const current = useRef(''), accumulated = useRef(''), prefs = useRef(preferences), history = useRef(messages), speechEpoch = useRef(0)
+  const current = useRef(''), accumulated = useRef(''), history = useRef(messages), speechEpoch = useRef(0)
   const ignoreRecording = useRef(false)
-  prefs.current = preferences; history.current = messages
+  history.current = messages
   const expand = (value: boolean) => { desktop.expand(value); setExpanded(value) }
-  const silence = () => { speechEpoch.current++; stopSpeaking(); stopBlips(); setPhase('idle') }
+  const silence = () => { speechEpoch.current++; setPhase('idle') }
   const stop = () => { current.current = ''; silence(); desktop.stop() }
-  const say = (value: string) => {
-    if (prefs.current.muted) return setPhase('idle')
-    const epoch = ++speechEpoch.current
-    setPhase('speaking')
-    const done = () => { if (speechEpoch.current === epoch) setPhase('idle') }
-    if (prefs.current.voice === 'blips') blipReply(value, done)
-    else speak(value, { onEnd: done })
-  }
   const send = async (value: string) => {
     if (!value.trim()) return
     if (/^(?:(?:hey )?kiwi[ ,]*)?(?:stop|cancel|be quiet)[.!]?$/i.test(value.trim())) { stop(); return }
@@ -58,7 +48,7 @@ export default function Companion() {
   useEffect(() => {
     document.documentElement.dataset.companion = 'true'
     void desktop.settings().then((saved) => { setPreferences(saved); setPreferencesReady(true) })
-    void desktop.health().then((health) => setNote(health.ok ? 'Ready. Say “Hey Kiwi”.' : health.message))
+    void desktop.health().then((health) => setNote(health.ok ? 'Ready. Say “Hey Kiwi” to give a command.' : 'Ready for desktop commands. Local model features are unavailable until Ollama is ready.'))
     const off = desktop.onEvent((event) => {
       if (event.type === 'expand') setExpanded(!!event.expanded)
       else if (event.type === 'settings' && event.settings) setPreferences(event.settings)
@@ -68,14 +58,14 @@ export default function Companion() {
       else if (event.id === current.current) {
         if (event.type === 'delta') { accumulated.current += event.text ?? ''; setReply(accumulated.current); setPhase('thinking') }
         else if (event.type === 'done') {
-          const value = accumulated.current; setNote(''); setMessages((items) => [...items.slice(-19), { role: 'assistant', content: value }]); setReply(''); say(value)
+          const value = accumulated.current; setNote(''); setMessages((items) => [...items.slice(-19), { role: 'assistant', content: value }]); setReply(''); setPhase('idle')
         } else if (event.type === 'error') { setNote(event.message ?? 'Something went wrong.'); setPhase('idle') }
         else if (event.type === 'cancelled') { setNote('Stopped.'); setPhase('idle') }
       }
     })
     const key = (event: KeyboardEvent) => { if (event.key === 'Escape') { ignoreRecording.current = true; stop(); micRef.current.stop() } }
     window.addEventListener('keydown', key)
-    return () => { off(); stopSpeaking(); stopBlips(); window.removeEventListener('keydown', key); delete document.documentElement.dataset.companion }
+    return () => { off(); window.removeEventListener('keydown', key); delete document.documentElement.dataset.companion }
     // Subscriptions use refs so voice and stream handlers survive panel changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -89,18 +79,17 @@ export default function Companion() {
       </div></header>
       {settingsOpen ? <Settings preferences={preferences} onSaved={setPreferences} /> : <>
         <div className="companion-conversation" role="log" aria-live="polite">
-          {!messages.length && <div className="companion-welcome"><span>Little sprout.<br />Big plans.</span><p>Your corner of the desktop just got a little more alive.</p><div>{['What can you do?', 'Open GitHub', 'Set a 5 minute timer'].map((prompt) => <button key={prompt} onClick={() => void send(prompt)}>{prompt} ↗</button>)}</div></div>}
+          {!messages.length && <div className="companion-welcome"><span>Tell Kiwi what to do.</span><p>Kiwi listens for commands and shows the result here. It does not speak replies.</p><div>{['What can you do?', 'Open GitHub', 'Open a new tab in Firefox'].map((prompt) => <button key={prompt} onClick={() => void send(prompt)}>{prompt} ↗</button>)}</div></div>}
           {messages.map((message, index) => <p key={index} className={`companion-message companion-message--${message.role}`}>{message.content}</p>)}
           {reply && <p className="companion-message companion-message--assistant">{reply}<i className="companion-caret" /></p>}
           {note && <p className="companion-note" role="status">{note}</p>}
           {(mic.error || wake.error) && <p role="alert">{mic.error || wake.error}</p>}
         </div>
         <form onSubmit={(event) => { event.preventDefault(); void send(text) }}>
-          <input value={text} onChange={(event) => setText(event.target.value)} placeholder="Ask your little companion…" maxLength={2000} aria-label="Message Kiwi" />
+          <input value={text} onChange={(event) => setText(event.target.value)} placeholder="Type a command for Kiwi…" maxLength={2000} aria-label="Command Kiwi" />
           <button type="submit" disabled={!text.trim()} aria-label="Send"><ArrowUp size={18} /></button>
         </form>
-        <footer><button className={mic.recording ? 'is-live' : ''} onClick={() => { ignoreRecording.current = false; setPaused(false); if (mic.recording) mic.stop(); else { stop(); void mic.start() } }} aria-label={mic.recording ? 'Finish recording' : 'Talk to Kiwi'}>{mic.recording ? <Square size={15} /> : <Mic size={15} />}{mic.recording ? 'Send recording' : 'Talk to Kiwi'}</button>
-          <button onClick={() => { silence(); void desktop.save({ muted: !preferences.muted }).then(setPreferences) }} aria-label={preferences.muted ? 'Unmute' : 'Mute'}>{preferences.muted ? <VolumeX size={16} /> : <Volume2 size={16} />}</button>
+        <footer><button className={mic.recording ? 'is-live' : ''} onClick={() => { ignoreRecording.current = false; setPaused(false); if (mic.recording) mic.stop(); else { stop(); void mic.start() } }} aria-label={mic.recording ? 'Finish recording' : 'Record command'}>{mic.recording ? <Square size={15} /> : <Mic size={15} />}{mic.recording ? 'Send recording' : 'Record command'}</button>
           <button onClick={stop}>Stop</button>
         </footer>
       </>}

@@ -1,6 +1,6 @@
 # Kiwi desktop companion
 
-Kiwi lives in a small transparent window in the bottom-right corner of Windows. The supplied lime mascot breathes, blinks, follows your cursor with its eyes, and animates while listening, thinking and speaking. Click Kiwi to open the chat panel; closing the panel leaves the mascot on your desktop. Its tray icon has Show, Mute, Pause microphone and Quit controls.
+Kiwi lives in a small transparent window in the bottom-right corner of Windows. The supplied lime mascot breathes, blinks, follows your cursor with its eyes, and animates while listening and working. Click Kiwi to open the command panel; closing the panel leaves the mascot on your desktop. Its tray icon has Show, Stop, Pause microphone and Quit controls.
 
 ## Test the Windows build
 
@@ -9,17 +9,17 @@ Open `frontend/release/Kiwi-Portable-0.1.1.exe` directly, or install `frontend/r
 On this computer Ollama and `qwen3:1.7b` are installed. Other computers need Ollama plus that model, or a personal compatible API key in Settings. Speech recognition uses a separately downloaded English model: use **Download speech model** in Settings if it is missing. Downloaded models stay outside the installer. No claim is made that model downloads work without an internet connection.
 
 - **Say “Hey Kiwi”, pause for Kiwi to listen, then speak your request.** No button is needed. Wake listening starts automatically. The smile changes to an animated speaker, and provisional words appear below the mascot. The completed command is checked locally before it runs. “Hey Kiwi, open GitHub” in one utterance is also supported.
-- Click Kiwi for the optional chat/settings panel. The microphone button remains a manual fallback.
+- Click Kiwi for the optional command/settings panel. The microphone button remains a manual fallback.
 - `Ctrl+Shift+Space`: open Kiwi and toggle microphone recording.
 - `Ctrl+Shift+.`: stop speech and cancel the model request. Esc also stops inside the panel.
 - **Listen for “Hey Kiwi”** in Settings and **Pause microphone** in the tray disable hands-free listening. A bare wake phrase opens a 12-second command window. Windows offline speech provides live hypotheses; local Whisper checks final audio. Live words can be revised. “Kiwi stop” and the stop hotkey cancel work; ordinary wake listening pauses during responses to avoid hearing Kiwi's own voice.
-- Select Natural voice or original synthesized Kiwi blips. The mute button is always in the panel.
+- Kiwi uses speech only for input. It never speaks replies; completed actions are shown on screen.
 
-Try “open GitHub and YouTube”, “search for pizza recipes”, “play lo-fi”, “open calculator”, “volume down”, “pause music”, “switch to dark mode”, “set a 25 minute timer”, or “what time is it?”. Music commands open a search page; play/pause sends media keys to the active media app. Timers require Kiwi to remain running.
+Try “open GitHub and YouTube”, “open a new tab in Firefox”, “search for pizza recipes”, “play lo-fi”, “open calculator”, “volume down”, “pause music”, “switch to dark mode”, “set a 25 minute timer”, or “what time is it?”. Music commands open a search page; play/pause sends media keys to the active media app. Timers require Kiwi to remain running.
 
 “Build a coffee shop landing page” drafts one standalone HTML page. Kiwi asks before generating and before writing/opening it, saves only a new folder in `Documents/KiwiProjects`, opens VS Code if installed in its standard user location, and opens the browser preview. This is a bounded page builder, not a general autonomous coding agent. It does not run generated shell commands or install packages.
 
-API keys are encrypted with Electron safeStorage in the main process, never returned to the renderer. Cloud mode sends your text and recent conversation to your chosen endpoint; it does not send screenshots, clipboard or microphone audio. Chat history is bounded in memory and resets on restart. Persistent personal memory, screen understanding, arbitrary window control and the full phase-6 coding-agent workflow are not implemented. The settings panel and assistant describe supported commands; there is no “do anything” shell execution.
+API keys are encrypted with Electron safeStorage in the main process, never returned to the renderer. Cloud mode is used only for the bounded website-drafting feature; it does not send screenshots, clipboard or microphone audio. Kiwi does not expose arbitrary shell execution, passwords, file deletion, or unrestricted computer control. New desktop capabilities should be added as explicit, validated actions in `frontend/electron/actions.cjs`.
 
 ## Build and verify from source
 
