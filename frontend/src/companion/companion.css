@@ -11,6 +11,15 @@ html[data-companion] body { font-family: 'Segoe UI', sans-serif; font-size: 14px
 .living-kiwi svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .living-kiwi .kiwi-eyes { translate: var(--gaze-x, 0px) var(--gaze-y, 0px); transform-box: fill-box; transform-origin: center; animation: sprout-blink 6s infinite; transition: translate .12s ease-out; }
 .living-kiwi .kiwi-mouth { opacity: .8; transform-box: fill-box; transform-origin: center; }
+.living-kiwi .kiwi-speaker { display: none; }
+.living-kiwi--listening .kiwi-mouth, .living-kiwi--thinking .kiwi-mouth, .living-kiwi--speaking .kiwi-mouth { display: none; }
+.living-kiwi--listening .kiwi-speaker, .living-kiwi--thinking .kiwi-speaker, .living-kiwi--speaking .kiwi-speaker { display: block; }
+.kiwi-speaker-wave { transform-box: fill-box; transform-origin: left center; animation: kiwi-sound-wave .7s ease-in-out infinite alternate; opacity: calc(.45 + var(--voice-level, 0) * .55); }
+.kiwi-speaker-wave--far { animation-delay: .2s; }
+@keyframes kiwi-sound-wave { from { transform: scaleX(.65); } to { transform: scaleX(1.1); } }
+.companion-live-caption { align-self: flex-end; width: min(340px, 100%); flex: none; margin-top: 6px; padding: 9px 13px; border: 1px solid #45513c; border-radius: 13px; background: #162015f5; color: #e0f2ce; box-shadow: 0 2px 8px #0003; }
+.companion-live-caption > span { color: #b7e889; font-size: 8px; letter-spacing: .12em; }
+.companion-live-caption p { margin: 3px 0 0; font-size: 13px; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
 .living-kiwi__shadow { position: absolute; width: 65px; height: 6px; bottom: 0; left: 40px; background: #17211845; border-radius: 50%; }
 .living-kiwi--thinking .living-kiwi__art { animation: sprout-think 1.4s ease-in-out infinite; }
 .living-kiwi--listening .living-kiwi__art { transform: rotate(-6deg); animation: sprout-listen 1.3s ease-in-out infinite; }

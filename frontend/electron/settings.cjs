@@ -1,11 +1,16 @@
 const { app, safeStorage } = require('electron')
 const fs = require('node:fs/promises')
 const path = require('node:path')
-const defaults = { provider: 'ollama', model: 'qwen3:1.7b', baseUrl: 'https://api.openai.com/v1', muted: false, wake: false, voice: 'natural' }
+const defaults = { provider: 'ollama', model: 'qwen3:1.7b', baseUrl: 'https://api.openai.com/v1', muted: false, wake: true, voice: 'natural', voiceActivationVersion: 1 }
 let settings = { ...defaults }
 const filename = () => path.join(app.getPath('userData'), 'preferences.json')
 async function load() {
-  try { settings = { ...defaults, ...JSON.parse(await fs.readFile(filename(), 'utf8')) } } catch { /* first launch */ }
+  try {
+    const saved = JSON.parse(await fs.readFile(filename(), 'utf8'))
+    settings = { ...defaults, ...saved }
+    // Migrate the old button-based default once; later wake-off preferences are respected.
+    if (saved.voiceActivationVersion !== 1) { settings.wake = true; settings.voiceActivationVersion = 1; await fs.writeFile(filename(), JSON.stringify(settings, null, 2)) }
+  } catch { /* first launch */ }
   return publicSettings()
 }
 function publicSettings() { const { encryptedKey, ...rest } = settings; return { ...rest, hasKey: !!encryptedKey } }

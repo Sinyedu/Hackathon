@@ -39,3 +39,4 @@ dock-answers/
 frontend/release/
 backend/build/
 backend/kiwi-voice.spec
+frontend/build/speech/

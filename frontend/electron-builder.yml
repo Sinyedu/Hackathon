@@ -11,9 +11,12 @@ files:
   - electron/intent.cjs
   - electron/actions.cjs
   - electron/voice.cjs
+  - electron/listener.cjs
   - electron/coding.cjs
   - build/kiwi.png
 extraResources:
+  - from: build/speech
+    to: listen
   - from: ../backend/dist/kiwi-voice
     to: voice
 asar: true

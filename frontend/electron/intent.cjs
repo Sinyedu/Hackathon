@@ -35,4 +35,8 @@ function intentOf(raw) {
   if (/^(?:what can you do|help|commands)[?!]?$/i.test(text)) return { type: 'help' }
   return { type: 'chat', text }
 }
-module.exports = { intentOf }
+function verifiedVoiceText(nativeText, verifiedText) {
+  if (/^hey\s+kiwi\b/i.test(nativeText) && !/^(?:hey|hay|hi)[\s,.!?]+kiwi\b/i.test(verifiedText.trim())) throw new Error('I did not hear “Hey Kiwi” clearly. Please try again.')
+  return verifiedText
+}
+module.exports = { intentOf, verifiedVoiceText }

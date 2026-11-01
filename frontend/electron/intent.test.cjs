@@ -1,6 +1,6 @@
 const { test } = require('node:test')
 const assert = require('node:assert/strict')
-const { intentOf } = require('./intent.cjs')
+const { intentOf, verifiedVoiceText } = require('./intent.cjs')
 test('desktop fast commands are independent of model prose', () => {
   assert.equal(intentOf('Hey Kiwi, open GitHub').type, 'urls')
   assert.equal(intentOf('OpenGIT Hub.').type, 'urls')
@@ -20,4 +20,9 @@ test('untrusted instructions cannot become arbitrary shell execution', () => {
   }
   assert.equal(intentOf('open https://example.com').url, 'https://example.com/')
   assert.equal(intentOf('open notepad').app, 'notepad')
+})
+test('an addressed command must retain its wake phrase after audio verification', () => {
+  assert.throws(() => verifiedVoiceText('hey kiwi open github', 'We should take a walk'), /did not hear/)
+  assert.equal(verifiedVoiceText('hey kiwi open github', 'Hey Kiwi. Open GitHub.'), 'Hey Kiwi. Open GitHub.')
+  assert.equal(verifiedVoiceText('what time is it', 'What time is it?'), 'What time is it?')
 })

@@ -1,4 +1,16 @@
-# Kiwi Windows test release 0.1.0
+# Kiwi Windows test release 0.1.1
+
+## Hands-free update
+
+- Frontend: 156 tests passed; desktop command-routing/wake-verification tests: 3 passed; build and lint pass.
+- Native Windows recognizer tested with synthetic WAVs: wake plus a separate command passes; ordinary speech without “Hey Kiwi” produces no wake or final event. This is a limited fixture test, not a human wake-accuracy certification.
+- Complete desktop fixture sequence passes without any button event: wake -> provisional live words -> in-memory audio -> local Whisper final -> actual time command -> reply. `handsfree-smoke.json` records the events and confirms `voiceOutputStarted: true` from the real speech-synthesis start event.
+- Listening screenshot verifies the smile's computed display is `none`, the speaker's is `block`, and captions appear below the collapsed mascot.
+- Native listeners use an isolated test profile and paced fixture audio in diagnostics. Normal operation captures the default microphone and does not save audio or transcript logs.
+- A startup verification bug returned a function from `executeJavaScript`, which Electron could not serialize. Returning a simple value fixes the error dialog; startup exceptions now also leave a local diagnostic log.
+- Corrected packaged run: `packaged-handsfree-smoke.json` records wake, interim words, final verification, the actual time action, and `voiceOutputStarted: true`. A synthetic WAV finishes at EOF, so its final mic badge is “Mic off”; normal microphone mode stays armed.
+
+Existing 0.1.0 measurements below are retained as the previous release baseline. The Windows native wake/live-caption adapter supersedes its button-oriented, batch-only wake path; see ADR 0006.
 
 Demo machine: Windows 11 Pro 10.0.26200, Ryzen 5 9600X, 31.07 GiB RAM, Radeon RX 9060 XT. This is a test on the user's existing system, not a clean VM or low-spec-machine certification.
 
@@ -39,6 +51,6 @@ The speech fixture was synthesized locally by Windows SAPI, not recorded from a 
 
 ## Known limits
 
-Windows x64 only. Unsigned local build. Local reasoning requires Ollama and a separately installed model; speech needs a separately cached/downloaded English model. Wake recognition is batch Whisper, with a 750 ms silence endpoint, and pauses while Kiwi is speaking/thinking; use Ctrl+Shift+. for immediate stop. No claim of streaming ASR, barge-in or all phase-2 latency targets. The tray's Pause microphone control takes effect immediately; hidden Kiwi pauses listening. Timers stop when Kiwi quits. Chat history resets on restart.
+Windows x64 only. Unsigned local build. Local reasoning requires Ollama and a separately installed model; final speech verification needs a separately cached/downloaded English model. Wake and provisional words use Windows offline English speech components. A bare “Hey Kiwi” opens a 12-second command window. Normal dictation pauses while Kiwi is speaking/thinking; “Kiwi stop” remains available, as does Ctrl+Shift+.. No claim that all phase-2 latency or human accuracy targets are met. The tray's Pause microphone control takes effect immediately; hidden Kiwi pauses listening. Timers stop when Kiwi quits. Chat history resets on restart.
 
 Desktop actions use fixed templates; no arbitrary shell execution, unrestricted filesystem manipulation, password entry or autonomous sending/purchasing. Music is a search page plus media keys, not Spotify OAuth. Website building is one approved HTML file, not a full coding-agent loop. Persistent memory, arbitrary window snapping/control, screen vision, per-tool undo and cross-platform adapters remain roadmap items. The legacy document application remains development-only and its in-memory state is not persisted claims storage.

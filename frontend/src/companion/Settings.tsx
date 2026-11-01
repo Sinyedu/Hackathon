@@ -17,7 +17,7 @@ export default function Settings({ preferences, onSaved }: { preferences: Prefer
     </>}
     <label>Voice<select value={form.voice} onChange={(event) => setForm({ ...form, voice: event.target.value as Preferences['voice'] })}><option value="natural">Natural · Windows voice</option><option value="blips">Kiwi blips · synthesized locally</option></select></label>
     <label className="companion-check"><input type="checkbox" checked={form.wake} onChange={(event) => setForm({ ...form, wake: event.target.checked })} /> Listen for “Hey Kiwi”</label>
-    <p>Wake listening uses this microphone and local speech recognition. Click the microphone to speak without a wake phrase. English voice input.</p>
+    <p>Say “Hey Kiwi”, then your request. Windows shows live words; the local decoder checks the completed command. English voice input. You can pause listening here or from the tray.</p>
     <div className="companion-settings__buttons">
       <button disabled={busy} onClick={() => void task(async () => { const saved = await desktop.save({ ...form, apiKey: key }); setKey(''); onSaved(saved); return 'Settings saved.' })}>Save</button>
       <button disabled={busy} onClick={() => void task(async () => (await desktop.health()).message)}>Test connection</button>

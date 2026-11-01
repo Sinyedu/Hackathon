@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "main": "electron/main.cjs",
   "description": "Kiwi - a local desktop companion",
   "author": "Kiwi contributors",
@@ -16,9 +16,10 @@
     "desktop": "electron electron/main.cjs",
     "test:desktop": "node --test electron/intent.test.cjs",
     "build:voice": "node electron/build-voice.cjs",
+    "build:listener": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File electron/build-native-speech.ps1",
     "build:icons": "electron ../tools/make_desktop_icon.cjs",
-    "dist": "pnpm build && pnpm build:voice && electron-builder --win nsis portable",
-    "pack": "pnpm build && pnpm build:voice && electron-builder --win --dir"
+    "dist": "pnpm build && pnpm build:listener && pnpm build:voice && electron-builder --win nsis portable",
+    "pack": "pnpm build && pnpm build:listener && pnpm build:voice && electron-builder --win --dir"
   },
   "dependencies": {
     "lucide-react": "^1.65.0",

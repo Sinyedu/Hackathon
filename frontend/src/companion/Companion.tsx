@@ -1,21 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowUp, Mic, Settings2, Square, Volume2, VolumeX, X } from 'lucide-react'
 import { useRecorder } from '../hooks/useRecorder'
-import { useHandsFree } from '../hooks/useHandsFree'
-import { parseWake } from '../lib/wake'
 import { speak, stopSpeaking } from '../lib/speak'
 import { desktop, type Preferences, type Turn } from './desktop'
 import { blipReply, stopBlips } from './blips'
 import LivingKiwi from './LivingKiwi'
+import { useWakeVoice } from './useWakeVoice'
 import Settings from './Settings'
 import './companion.css'
 
-const initial: Preferences = { provider: 'ollama', model: 'qwen3:1.7b', baseUrl: 'https://api.openai.com/v1', muted: false, wake: false, voice: 'natural', hasKey: false }
+const initial: Preferences = { provider: 'ollama', model: 'qwen3:1.7b', baseUrl: 'https://api.openai.com/v1', muted: false, wake: true, voice: 'natural', hasKey: false }
 export default function Companion() {
   const [expanded, setExpanded] = useState(false), [settingsOpen, setSettingsOpen] = useState(false)
   const [preferences, setPreferences] = useState(initial), [text, setText] = useState(''), [phase, setPhase] = useState('idle')
   const [messages, setMessages] = useState<Turn[]>([]), [reply, setReply] = useState(''), [note, setNote] = useState('Click me. Let’s make something happen.')
   const [paused, setPaused] = useState(false)
+  const [preferencesReady, setPreferencesReady] = useState(false)
   const current = useRef(''), accumulated = useRef(''), prefs = useRef(preferences), history = useRef(messages), speechEpoch = useRef(0)
   const ignoreRecording = useRef(false)
   prefs.current = preferences; history.current = messages
@@ -39,26 +39,26 @@ export default function Companion() {
     setMessages((items) => [...items.slice(-19), { role: 'user', content: value }]); setPhase('thinking'); setNote('On it…')
     try { await desktop.send({ id, text: value, history: prior }) } catch (error) { setNote((error as Error).message); setPhase('idle') }
   }
-  const heard = async (audio: Blob, wake: boolean) => {
+  const heard = async (audio: Blob) => {
     if (ignoreRecording.current) return
     const epoch = speechEpoch.current
     setPhase('thinking'); setNote('Listening to the recording…')
     try {
       const value = await desktop.transcribe(new Uint8Array(await audio.arrayBuffer()))
       if (epoch !== speechEpoch.current) return
-      const command = wake ? parseWake(value) : value
-      if (command === null) { setNote('Say “Hey Kiwi” followed by your request.'); setPhase('idle'); return }
-      if (!command.trim()) { setNote('Yes? Say “Hey Kiwi” and your request together.'); setPhase('idle'); return }
-      setNote(`Heard: ${value}`); await send(command)
+      if (!value.trim()) { setNote('I didn’t catch that. Try again.'); setPhase('idle'); return }
+      setNote(`Heard: ${value}`); await send(value)
     } catch (error) { setNote((error as Error).message); setPhase('idle') }
   }
-  const mic = useRecorder((audio) => { void heard(audio, false) })
-  const hands = useHandsFree(preferences.wake && !paused, phase === 'thinking' || phase === 'speaking' || mic.recording, (audio) => { void heard(audio, true) }, 750)
+  const mic = useRecorder((audio) => { void heard(audio) })
+  const wake = useWakeVoice(preferencesReady && preferences.wake && !paused && !mic.recording, phase === 'thinking' || phase === 'speaking', (value) => { void send(value) }, stop)
+  const captionVisible = !!wake.caption
+  useEffect(() => { if (!expanded) desktop.caption(captionVisible) }, [expanded, captionVisible])
   const micRef = useRef(mic); micRef.current = mic
   useEffect(() => {
     document.documentElement.dataset.companion = 'true'
-    void desktop.settings().then(setPreferences)
-    void desktop.health().then((health) => setNote(health.ok ? 'Ready. Click me or use Ctrl+Shift+Space.' : health.message))
+    void desktop.settings().then((saved) => { setPreferences(saved); setPreferencesReady(true) })
+    void desktop.health().then((health) => setNote(health.ok ? 'Ready. Say “Hey Kiwi”.' : health.message))
     const off = desktop.onEvent((event) => {
       if (event.type === 'expand') setExpanded(!!event.expanded)
       else if (event.type === 'settings' && event.settings) setPreferences(event.settings)
@@ -79,7 +79,8 @@ export default function Companion() {
     // Subscriptions use refs so voice and stream handlers survive panel changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  const activePhase = mic.recording || hands.capturing ? 'listening' : phase
+  const activePhase = mic.recording || wake.listening ? 'listening' : wake.processing ? 'thinking' : phase
+  const wakeLabel = paused || !preferences.wake ? 'Mic paused' : wake.error ? 'Mic unavailable' : wake.status === 'starting' ? 'Starting mic…' : wake.status === 'off' ? 'Mic off' : 'Hey Kiwi · mic on'
   return <main className={`companion ${expanded ? 'companion--expanded' : ''}`}>
     {expanded && <section className="companion-panel" aria-label="Kiwi assistant">
       <header><div><strong>kiwi<span>●</span></strong><small>{preferences.provider === 'ollama' ? 'LOCAL · on your computer' : 'CLOUD · your provider'}</small></div><div>
@@ -92,7 +93,7 @@ export default function Companion() {
           {messages.map((message, index) => <p key={index} className={`companion-message companion-message--${message.role}`}>{message.content}</p>)}
           {reply && <p className="companion-message companion-message--assistant">{reply}<i className="companion-caret" /></p>}
           {note && <p className="companion-note" role="status">{note}</p>}
-          {(mic.error || hands.state === 'denied') && <p role="alert">{mic.error || 'Microphone access is blocked in Windows privacy settings.'}</p>}
+          {(mic.error || wake.error) && <p role="alert">{mic.error || wake.error}</p>}
         </div>
         <form onSubmit={(event) => { event.preventDefault(); void send(text) }}>
           <input value={text} onChange={(event) => setText(event.target.value)} placeholder="Ask your little companion…" maxLength={2000} aria-label="Message Kiwi" />
@@ -104,6 +105,7 @@ export default function Companion() {
         </footer>
       </>}
     </section>}
-    <div className="companion-pet"><span className={`companion-pet__status companion-pet__status--${activePhase}`}>{activePhase === 'idle' ? (preferences.wake && !paused ? 'Hey Kiwi' : 'Say hello') : activePhase}</span><LivingKiwi phase={activePhase} onClick={() => { expand(!expanded); setPaused(false) }} /></div>
+    <div className="companion-pet"><span className={`companion-pet__status companion-pet__status--${activePhase}`}>{activePhase === 'idle' ? wakeLabel : activePhase}</span><LivingKiwi phase={activePhase} level={wake.level} onClick={() => { expand(!expanded); setPaused(false) }} /></div>
+    {wake.caption && <div className="companion-live-caption" role="status" aria-live="polite"><span>{wake.listening ? 'LISTENING' : 'HEARD'}</span><p>{wake.caption}</p></div>}
   </main>
 }

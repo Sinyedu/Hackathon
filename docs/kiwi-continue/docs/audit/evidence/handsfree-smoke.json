@@ -1,0 +1,91 @@
+{
+  "fixture": "Synthetic Windows speech, actual native wake, Whisper verification and application command pipeline",
+  "events": [
+    {
+      "mark": "mascot-ready",
+      "durationMs": 161.853
+    },
+    {
+      "type": "voice-status",
+      "status": "starting"
+    },
+    {
+      "type": "voice-status",
+      "status": "armed"
+    },
+    {
+      "type": "voice-wake"
+    },
+    {
+      "type": "voice-partial",
+      "text": "hey kiwi"
+    },
+    {
+      "mark": "wake-ui",
+      "speaker": "block",
+      "smile": "none",
+      "caption": "LISTENINGhey kiwi"
+    },
+    {
+      "type": "voice-wake"
+    },
+    {
+      "type": "voice-status",
+      "status": "listening"
+    },
+    {
+      "type": "voice-partial",
+      "text": "for"
+    },
+    {
+      "type": "voice-partial",
+      "text": "what"
+    },
+    {
+      "type": "voice-partial",
+      "text": "what time"
+    },
+    {
+      "type": "voice-partial",
+      "text": "what time is it"
+    },
+    {
+      "type": "voice-processing",
+      "text": "what time is it"
+    },
+    {
+      "type": "voice-status",
+      "status": "busy"
+    },
+    {
+      "type": "voice-status",
+      "status": "off"
+    },
+    {
+      "type": "voice-final",
+      "text": "What time is it?"
+    },
+    {
+      "type": "delta",
+      "id": "78c1d84c-1ce8-433c-a61b-3f5f2ed9e3ed",
+      "text": "It's 13:20."
+    },
+    {
+      "type": "done",
+      "id": "78c1d84c-1ce8-433c-a61b-3f5f2ed9e3ed"
+    }
+  ],
+  "ui": {
+    "caption": "HEARDWhat time is it?",
+    "badge": "Mic off",
+    "speaker": true,
+    "desktop": true,
+    "voiceOutputStarted": true
+  },
+  "bounds": {
+    "x": 3068,
+    "y": 1105,
+    "width": 360,
+    "height": 275
+  }
+}

@@ -4,14 +4,15 @@ Kiwi lives in a small transparent window in the bottom-right corner of Windows. 
 
 ## Test the Windows build
 
-Open `frontend/release/Kiwi-Portable-0.1.0.exe` directly, or install `frontend/release/Kiwi-Setup-0.1.0.exe`. Both are unsigned local test builds. Windows may show an unknown-publisher/SmartScreen prompt. These executables do not require Node, pnpm, a browser dev server or system Python.
+Open `frontend/release/Kiwi-Portable-0.1.1.exe` directly, or install `frontend/release/Kiwi-Setup-0.1.1.exe`. Both are unsigned local test builds. Windows may show an unknown-publisher/SmartScreen prompt. These executables do not require Node, pnpm, a browser dev server or system Python.
 
 On this computer Ollama and `qwen3:1.7b` are installed. Other computers need Ollama plus that model, or a personal compatible API key in Settings. Speech recognition uses a separately downloaded English model: use **Download speech model** in Settings if it is missing. Downloaded models stay outside the installer. No claim is made that model downloads work without an internet connection.
 
-- Click Kiwi to chat. Click the microphone to record; click it again to send.
+- **Say “Hey Kiwi”, pause for Kiwi to listen, then speak your request.** No button is needed. Wake listening starts automatically. The smile changes to an animated speaker, and provisional words appear below the mascot. The completed command is checked locally before it runs. “Hey Kiwi, open GitHub” in one utterance is also supported.
+- Click Kiwi for the optional chat/settings panel. The microphone button remains a manual fallback.
 - `Ctrl+Shift+Space`: open Kiwi and toggle microphone recording.
 - `Ctrl+Shift+.`: stop speech and cancel the model request. Esc also stops inside the panel.
-- Enable **Listen for “Hey Kiwi”** in Settings for hands-free requests. Say the wake phrase and your request together. This uses local batch speech recognition; it is not an instant keyword detector and does not interrupt TTS while speaking. Use the stop hotkey to interrupt immediately.
+- **Listen for “Hey Kiwi”** in Settings and **Pause microphone** in the tray disable hands-free listening. A bare wake phrase opens a 12-second command window. Windows offline speech provides live hypotheses; local Whisper checks final audio. Live words can be revised. “Kiwi stop” and the stop hotkey cancel work; ordinary wake listening pauses during responses to avoid hearing Kiwi's own voice.
 - Select Natural voice or original synthesized Kiwi blips. The mute button is always in the panel.
 
 Try “open GitHub and YouTube”, “search for pizza recipes”, “play lo-fi”, “open calculator”, “volume down”, “pause music”, “switch to dark mode”, “set a 25 minute timer”, or “what time is it?”. Music commands open a search page; play/pause sends media keys to the active media app. Timers require Kiwi to remain running.
