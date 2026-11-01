@@ -1,0 +1,21 @@
+{
+  "sites": [
+    { "name": "GitHub", "aliases": ["github", "git hub"], "url": "https://github.com" },
+    { "name": "YouTube", "aliases": ["youtube", "you tube"], "url": "https://www.youtube.com" },
+    { "name": "Google", "aliases": ["google"], "url": "https://www.google.com" },
+    { "name": "Gmail", "aliases": ["gmail", "email", "mail"], "url": "https://mail.google.com" },
+    { "name": "Google Maps", "aliases": ["maps", "google maps"], "url": "https://maps.google.com" },
+    { "name": "Wikipedia", "aliases": ["wikipedia", "wiki"], "url": "https://www.wikipedia.org" },
+    {
+      "name": "Stack Overflow",
+      "aliases": ["stack overflow", "stackoverflow"],
+      "url": "https://stackoverflow.com"
+    },
+    { "name": "MDN", "aliases": ["mdn", "mdn docs"], "url": "https://developer.mozilla.org" },
+    { "name": "Reddit", "aliases": ["reddit"], "url": "https://www.reddit.com" }
+  ],
+  "searchUrls": {
+    "web": "https://duckduckgo.com/?q={q}",
+    "youtube": "https://www.youtube.com/results?search_query={q}"
+  }
+}

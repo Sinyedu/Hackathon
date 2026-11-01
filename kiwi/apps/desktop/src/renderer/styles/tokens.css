@@ -1,0 +1,114 @@
+/* Design tokens for both windows. Every color in the app comes from here. */
+:root {
+  color-scheme: light dark;
+
+  --kiwi-body: #8bc34a;
+  --kiwi-body-shade: #5f9a2a;
+  --kiwi-belly: #fff6d6;
+  --kiwi-ring: #c9d98a;
+  --kiwi-seed: #3b2f1d;
+  --kiwi-eye: #1f2a14;
+  --kiwi-eye-shine: #ffffff;
+  --kiwi-beak: #f2994a;
+  --kiwi-feet: #e07b2c;
+  --kiwi-leaf: #3f7d20;
+  --kiwi-blush: #f4a38c;
+  --kiwi-accent: #2f6fd0;
+  --kiwi-alert: #d64a2f;
+  --kiwi-shadow: rgb(0 0 0 / 18%);
+
+  --surface: #fffdf5;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f1f3e6;
+  --border: #b9c4a0;
+  --text: #1f2a14;
+  --text-muted: #4b5740;
+  --text-on-accent: #ffffff;
+  --accent: #3f7d20;
+  --focus-ring: #1f5fbf;
+
+  --chip-done-bg: #dcefc3;
+  --chip-done-text: #274a0a;
+  --chip-planned-bg: #fbe9b7;
+  --chip-planned-text: #5c4300;
+  --chip-failed-bg: #fbd9d4;
+  --chip-failed-text: #7a1f12;
+  --chip-undone-bg: #e4e6df;
+  --chip-undone-text: #3b4034;
+
+  --font-sans: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --line-tight: 1.25;
+  --line-normal: 1.5;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-full: 999px;
+  --elevation-panel: 0 8px 24px rgb(31 42 20 / 22%);
+  --elevation-bubble: 0 2px 8px rgb(31 42 20 / 18%);
+
+  --motion-fast: 120ms;
+  --motion-base: 240ms;
+  --motion-slow: 600ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --kiwi-belly: #f4e9c0;
+    --kiwi-shadow: rgb(0 0 0 / 35%);
+
+    --surface: #1b2214;
+    --surface-raised: #252e1c;
+    --surface-sunken: #141a0f;
+    --border: #4d5b3a;
+    --text: #f1f5e6;
+    --text-muted: #c1cbae;
+    --accent: #a5d65c;
+    --text-on-accent: #14200a;
+    --focus-ring: #8ab8ff;
+
+    --chip-done-bg: #2f4a17;
+    --chip-done-text: #d9f0b5;
+    --chip-planned-bg: #54410c;
+    --chip-planned-text: #fbe9b7;
+    --chip-failed-bg: #5e231a;
+    --chip-failed-text: #fbd9d4;
+    --chip-undone-bg: #3b4034;
+    --chip-undone-text: #e4e6df;
+  }
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

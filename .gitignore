@@ -40,3 +40,8 @@ frontend/release/
 backend/build/
 backend/kiwi-voice.spec
 frontend/build/speech/
+
+# Kiwi build output
+kiwi/apps/desktop/out/
+kiwi/apps/desktop/release/
+kiwi/coverage/

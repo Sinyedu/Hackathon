@@ -1,0 +1,54 @@
+{
+  "apps": [
+    {
+      "id": "calculator",
+      "name": "Calculator",
+      "aliases": ["calc", "calculator"],
+      "launch": {
+        "win32": { "command": "calc.exe" },
+        "darwin": { "command": "open", "args": ["-a", "Calculator"] },
+        "linux": { "command": "gnome-calculator" }
+      }
+    },
+    {
+      "id": "text-editor",
+      "name": "Text editor",
+      "aliases": ["notepad", "text editor", "textedit", "gedit"],
+      "launch": {
+        "win32": { "command": "notepad.exe" },
+        "darwin": { "command": "open", "args": ["-a", "TextEdit"] },
+        "linux": { "command": "gnome-text-editor" }
+      }
+    },
+    {
+      "id": "files",
+      "name": "Files",
+      "aliases": ["files", "file manager", "explorer", "finder", "file explorer"],
+      "launch": {
+        "win32": { "command": "explorer.exe" },
+        "darwin": { "command": "open", "args": ["-a", "Finder"] },
+        "linux": { "command": "nautilus" }
+      }
+    },
+    {
+      "id": "spotify",
+      "name": "Spotify",
+      "aliases": ["spotify", "music"],
+      "launch": {
+        "win32": { "uri": "spotify:" },
+        "darwin": { "uri": "spotify:" },
+        "linux": { "uri": "spotify:" }
+      }
+    },
+    {
+      "id": "vscode",
+      "name": "VS Code",
+      "aliases": ["vs code", "vscode", "code", "visual studio code"],
+      "launch": {
+        "win32": { "uri": "vscode://" },
+        "darwin": { "uri": "vscode://" },
+        "linux": { "command": "code" }
+      }
+    }
+  ]
+}

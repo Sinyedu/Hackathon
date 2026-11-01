@@ -1,0 +1,28 @@
+.bubble {
+  margin: 0;
+  max-width: 100%;
+  padding: var(--space-1) var(--space-3);
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elevation-bubble);
+  font-size: var(--text-sm);
+  line-height: var(--line-tight);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--motion-base) var(--ease-out);
+}
+
+.bubble[data-visible='true'] {
+  opacity: 1;
+}
+.bubble--action {
+  font-weight: 700;
+}
+.bubble-label {
+  color: var(--text-muted);
+}

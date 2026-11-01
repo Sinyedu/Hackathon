@@ -1,0 +1,38 @@
+body {
+  background: var(--surface-sunken);
+  overflow: auto;
+}
+.gallery {
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-4);
+}
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 120px);
+  gap: var(--space-4);
+}
+.gallery-grid figure {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-sm);
+}
+.gallery-mascot {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto var(--space-2);
+}
+.gallery-bubbles {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 220px;
+}
+.gallery-panels {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.gallery-panel {
+  width: 380px;
+  height: 520px;
+}
