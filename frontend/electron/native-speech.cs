@@ -96,6 +96,7 @@ public static class KiwiSpeech {
           if (!awake && !waking) Emit("wake", "");
           string audio = "";
           try { using (var stream = new MemoryStream()) { e.Result.Audio.WriteToWaveStream(stream); if (stream.Length < 5 * 1024 * 1024) audio = Convert.ToBase64String(stream.ToArray()); } } catch { }
+          Emit("conf", e.Result.Confidence.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
           Emit("final", e.Result.Text, audio); engine.RequestRecognizerUpdate("busy");
         }
       };

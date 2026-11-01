@@ -55,11 +55,13 @@ jobs:
         working-directory: frontend
       - run: pnpm test
         working-directory: frontend
+      - run: pnpm test:desktop
+        working-directory: frontend
       - run: pnpm build
         working-directory: frontend
 
   frontend:
-    name: Frontend (lint + test + build)
+    name: Frontend (lint + test + desktop tests + build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -77,6 +79,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm test
+      - run: pnpm test:desktop
       - run: pnpm build
         env:
           VITE_API_URL: http://localhost:8000

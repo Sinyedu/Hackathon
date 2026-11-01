@@ -14,11 +14,13 @@
     "preview": "vite preview",
     "desktop:dev": "pnpm build && electron electron/main.cjs",
     "desktop": "electron electron/main.cjs",
-    "test:desktop": "node --test electron/intent.test.cjs",
+    "test:desktop": "node --test \"electron/*.test.cjs\"",
     "build:voice": "node electron/build-voice.cjs",
     "build:listener": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File electron/build-native-speech.ps1",
     "build:icons": "electron ../tools/make_desktop_icon.cjs",
     "dist": "pnpm build && pnpm build:listener && pnpm build:voice && electron-builder --win nsis portable",
+    "installer": "pnpm dist",
+    "electron:installer": "pnpm dist",
     "pack": "pnpm build && pnpm build:listener && pnpm build:voice && electron-builder --win --dir"
   },
   "dependencies": {

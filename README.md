@@ -6,6 +6,8 @@ Kiwi lives in a small transparent window in the bottom-right corner of Windows. 
 
 Open `frontend/release/Kiwi-Portable-0.1.1.exe` directly, or install `frontend/release/Kiwi-Setup-0.1.1.exe`. Both are unsigned local test builds. Windows may show an unknown-publisher/SmartScreen prompt. These executables do not require Node, pnpm, a browser dev server or system Python.
 
+**Where do I get the installer?** `frontend/release/` is not committed to Git. Build it in GitHub: **Actions → Release Windows installer → Run workflow** (or push a tag such as `v0.1.2`, which also creates a GitHub Release), then download the `kiwi-windows` artifact. Or build it yourself, see [Build the release yourself](#build-the-release-yourself).
+
 On this computer Ollama and `qwen3:1.7b` are installed. Other computers need Ollama plus that model, or a personal compatible API key in Settings. Speech recognition uses a separately downloaded English model: use **Download speech model** in Settings if it is missing. Downloaded models stay outside the installer. No claim is made that model downloads work without an internet connection.
 
 - **Say “Hey Kiwi”, pause for Kiwi to listen, then speak your request.** No button is needed. Wake listening starts automatically. The smile changes to an animated speaker, and provisional words appear below the mascot. The completed command is checked locally before it runs. “Hey Kiwi, open GitHub” in one utterance is also supported.
@@ -61,6 +63,14 @@ The first voice run may need the English speech model. Open the panel, choose Se
 | --- | --- |
 | `open GitHub` | Opens the known GitHub HTTPS site. |
 | `open GitHub and YouTube` | Opens both known sites. |
+| `open Discord`, `open Spotify`, `open Steam` | Opens the installed desktop app. If it is not installed, opens its website and says so. |
+| `open Discord in the browser` | Opens the website even when the app is installed. |
+| `find my screenshots`, `find my tax return` | Lists matching files from Desktop, Documents, Downloads, Pictures, Videos and Music (read-only, newest first). `open the first one` opens a result, but only documents, images and media. |
+| `open downloads`, `open screenshots` | Opens that folder in Explorer. |
+| `close Chrome`, `quit Discord` | Asks that app to close, after a confirmation dialog. Only a short named list; never a force-kill. |
+| `open the weather`, `weather in Copenhagen` | Opens the Windows Weather app, or a web search for the place. |
+| `write a message to Hizashi saying hello` | Opens Discord and copies the text to the clipboard. You open the chat, paste and press Enter. Kiwi never types into other apps or sends messages. |
+| `open Chrome`, `open Edge`, `open Opera`, `open Settings`, `open Task Manager`, `open Paint` | Launches that app from its usual install location, or reports that it is not installed. |
 | `open a new tab in Firefox` | Launches Firefox with a blank new tab. |
 | `open a new Firefox tab to GitHub` | Opens GitHub in a new Firefox tab. |
 | `open calculator`, `open notepad`, `open Firefox` | Launches the allow-listed Windows application. |
@@ -86,6 +96,10 @@ This is deliberate. Giving a language model unrestricted PowerShell, filesystem 
 **“Kiwi could not start.”** Close every old Kiwi window from the tray or Task Manager, then launch the newest executable from `frontend/release`. If it still fails, inspect `%APPDATA%\Kiwi\logs\startup.log`. Rebuilding from source also clears stale renderer files: run `pnpm.cmd build` inside `frontend`, then launch with `pnpm.cmd desktop`.
 
 **The mascot is visible but does not hear me.** Check microphone privacy permissions, confirm that the Windows speech language includes English, and make sure Kiwi is not paused in the tray. The small status chip should say **Hey Kiwi · mic on**. Use `Ctrl+Shift+.` to stop a stuck command, then re-enable the microphone.
+
+**Kiwi hears “Hey Kiwi” and shows words, but the command never runs (running from source).** Hands-free uses two helpers that are not committed to Git. Build the Windows listener with `pnpm build:listener` inside `frontend`. Set up the speech service with `python scripts/dev.py setup`, then choose **Download speech model** in Settings (about 480 MB, once). Without the speech service Kiwi reports “Speech service is not set up”. The installer from the workflow above bundles the service; it still needs the one-time model download.
+
+**The mic works but is unreliable.** First make sure the speech model is downloaded (Settings, **Download speech model**); without it every spoken command fails with “Speech model is not ready”. To see which stage fails, start Kiwi with `KIWI_VOICE_DEBUG=1` (in Git Bash: `KIWI_VOICE_DEBUG=1 frontend/release/Kiwi-Portable-0.1.1.exe`). Each attempt is then written to `%APPDATA%Kiwilogsoice-debug.jsonl` with the recognizer’s text and confidence, what Whisper heard, and whether the command was accepted. The log holds text only, never audio, and nothing is written unless the variable is set.
 
 **The words are wrong.** Speak the wake phrase first, pause briefly for the speaker animation, and use short direct commands. Kiwi shows provisional words because Windows speech can revise them. A final command is rejected if its verified audio no longer contains the addressed wake phrase.
 

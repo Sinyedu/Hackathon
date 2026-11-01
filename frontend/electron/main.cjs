@@ -5,7 +5,7 @@ const provider = require('./provider.cjs')
 const voice = require('./voice.cjs')
 const listener = require('./listener.cjs')
 const actions = require('./actions.cjs')
-const { intentOf } = require('./intent.cjs')
+const { intentOf, leadingWake } = require('./intent.cjs')
 let window, tray, cursorTimer, current, quitting = false
 const started = performance.now()
 const events = []
@@ -45,9 +45,13 @@ function trusted(event) {
 }
 async function respond(text, id) {
   const controller = new AbortController(); current = controller
-  const intent = intentOf(text)
-  const timeout = setTimeout(() => controller.abort(), intent.type === 'build' ? 180000 : 60000)
+  let timeout
   try {
+    // A pending "write a message to X" turns the next utterance into the message text, unless it is a stop/cancel.
+    const parsed = intentOf(text)
+    const pending = parsed.type === 'stop' ? (actions.takePendingDraft(), null) : actions.takePendingDraft()
+    const intent = pending ? { type: 'draft-message', to: pending.to, app: pending.app, text: leadingWake(text).rest.trim().replace(/^["“”]|["“”]$/g, '') } : parsed
+    timeout = setTimeout(() => controller.abort(), intent.type === 'build' ? 180000 : 60000)
     if (intent.type !== 'unsupported') {
       if (intent.type === 'stop') { stop(); return }
       try {
@@ -56,7 +60,7 @@ async function respond(text, id) {
         if (!controller.signal.aborted) publish('delta', { id, text: answer })
       } catch (error) { await actions.audit(intent.type, false); throw error }
     } else if (intent.type === 'unsupported') {
-      throw new Error('I only execute desktop commands. Try “open Firefox”, “open a new tab in Firefox”, “search for…”, or “volume down”.')
+      throw new Error('I only run a fixed set of desktop commands. Try “open Discord”, “find my budget file”, “open downloads”, “close Chrome”, “search for…”, or “volume down”.')
     }
     if (!controller.signal.aborted) publish('done', { id })
   } catch (error) { if (!controller.signal.aborted) publish('error', { id, message: error.message }); else publish('cancelled', { id }) }

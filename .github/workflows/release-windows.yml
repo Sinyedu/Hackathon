@@ -1,0 +1,80 @@
+name: Release Windows installer
+
+# Builds Kiwi-Setup-<version>.exe and Kiwi-Portable-<version>.exe (unsigned) on a clean Windows runner.
+# Run it by hand (Actions -> Release Windows installer -> Run workflow) or push a tag like v0.1.2.
+# Manual runs upload the installers as a build artifact; tag runs also create a GitHub Release.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  installer:
+    name: Build installer
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      # build-voice.cjs expects backend/.venv, so the speech service is frozen from the same pinned requirements.
+      - name: Create backend venv with PyInstaller
+        shell: bash
+        run: |
+          python -m venv backend/.venv
+          backend/.venv/Scripts/python.exe -m pip install --upgrade pip
+          backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.txt pyinstaller
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Test before packaging
+        working-directory: frontend
+        run: |
+          pnpm lint
+          pnpm test
+          pnpm test:desktop
+
+      # Builds the UI, the Windows speech listener, the frozen speech service and both installers.
+      - name: Build installer
+        working-directory: frontend
+        run: pnpm dist --publish never
+
+      - name: Show what was built
+        shell: bash
+        run: ls -lh frontend/release/*.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kiwi-windows
+          path: |
+            frontend/release/Kiwi-Setup-*.exe
+            frontend/release/Kiwi-Portable-*.exe
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" frontend/release/Kiwi-Setup-*.exe frontend/release/Kiwi-Portable-*.exe \
+            --title "Kiwi $GITHUB_REF_NAME" \
+            --notes "Unsigned Windows build. Windows SmartScreen may warn: More info, then Run anyway. Local reasoning needs Ollama; the first voice use asks to download the English speech model (about 480 MB)."

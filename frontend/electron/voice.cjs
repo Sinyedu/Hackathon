@@ -9,6 +9,10 @@ function command() {
     ? { exe: path.join(process.resourcesPath, 'voice', 'kiwi-voice.exe'), args: [] }
     : { exe: path.resolve(__dirname, '../../backend/.venv/Scripts/python.exe'), args: [path.resolve(__dirname, '../../backend/desktop_voice.py')] }
 }
+/** The speech service is a separate program; say how to get it back for installed and development builds. */
+function missingMessage() {
+  return app.isPackaged ? 'Speech service is missing. Reinstall Kiwi or use text input.' : 'Speech service is not set up. Run "python scripts/dev.py setup" in the repo, restart Kiwi, then use Download speech model in Settings.'
+}
 function start() {
   if (port) return Promise.resolve(port)
   if (starting) return starting
@@ -22,7 +26,7 @@ function start() {
       if (!buffer.includes('\n')) return
       try { const value = JSON.parse(buffer.split('\n')[0]); if (Number.isInteger(value.port)) { port = value.port; clearTimeout(timer); resolve(port) } } catch { /* await startup */ }
     })
-    child.once('error', () => { clearTimeout(timer); reject(new Error('Speech service is missing. Reinstall Kiwi or use text input.')) })
+    child.once('error', () => { clearTimeout(timer); reject(new Error(missingMessage())) })
     child.once('exit', () => { clearTimeout(timer); port = null; starting = null; reject(new Error('Speech service stopped. Try your microphone again.')) })
   }).catch((error) => { starting = null; throw error })
   return starting

@@ -10,6 +10,10 @@ files:
   - electron/provider.cjs
   - electron/intent.cjs
   - electron/actions.cjs
+  - electron/apps.cjs
+  - electron/installed-apps.cjs
+  - electron/newfile.cjs
+  - electron/files.cjs
   - electron/voice.cjs
   - electron/listener.cjs
   - electron/coding.cjs
