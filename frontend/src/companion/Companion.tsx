@@ -71,15 +71,16 @@ export default function Companion() {
   }, [])
   const activePhase = mic.recording || wake.listening ? 'listening' : wake.processing ? 'thinking' : phase
   const wakeLabel = paused || !preferences.wake ? 'Mic paused' : wake.error ? 'Mic unavailable' : wake.status === 'starting' ? 'Starting mic…' : wake.status === 'off' ? 'Mic off' : 'Hey Kiwi · mic on'
+  const phaseLabel = activePhase === 'listening' ? 'Listening…' : activePhase === 'thinking' ? 'Thinking…' : activePhase === 'speaking' ? 'Replying…' : wakeLabel
   return <main className={`companion ${expanded ? 'companion--expanded' : ''}`}>
     {expanded && <section className="companion-panel" aria-label="Kiwi assistant">
-      <header><div><strong>kiwi<span>●</span></strong><small>{preferences.provider === 'ollama' ? 'LOCAL · on your computer' : 'CLOUD · your provider'}</small></div><div>
+      <header><div className="companion-brand"><span className="companion-brand__mark" aria-hidden="true">✦</span><div><strong>kiwi<span>●</span></strong><small>{preferences.provider === 'ollama' ? 'LOCAL · on your computer' : 'CLOUD · your provider'}</small></div></div><div>
         <button onClick={() => { setSettingsOpen(!settingsOpen); setPaused(false) }} aria-label="Settings"><Settings2 size={17} /></button>
         <button onClick={() => expand(false)} aria-label="Collapse to mascot"><X size={17} /></button>
       </div></header>
       {settingsOpen ? <Settings preferences={preferences} onSaved={setPreferences} /> : <>
         <div className="companion-conversation" role="log" aria-live="polite">
-          {!messages.length && <div className="companion-welcome"><span>Tell Kiwi what to do.</span><p>Kiwi listens for commands and shows the result here. It does not speak replies.</p><div>{['What can you do?', 'Open GitHub', 'Open a new tab in Firefox'].map((prompt) => <button key={prompt} onClick={() => void send(prompt)}>{prompt} ↗</button>)}</div></div>}
+          {!messages.length && <div className="companion-welcome"><span className="companion-welcome__eyebrow">YOUR TINY DESKTOP HELPER</span><h1>What can I help with?</h1><p>Ask for a small, safe action. Kiwi will show you what happened.</p><div>{['What can you do?', 'Open GitHub', 'Open a new tab in Firefox'].map((prompt) => <button key={prompt} onClick={() => void send(prompt)}>{prompt} <span aria-hidden="true">↗</span></button>)}</div></div>}
           {messages.map((message, index) => <p key={index} className={`companion-message companion-message--${message.role}`}>{message.content}</p>)}
           {reply && <p className="companion-message companion-message--assistant">{reply}<i className="companion-caret" /></p>}
           {note && <p className="companion-note" role="status">{note}</p>}
@@ -94,7 +95,7 @@ export default function Companion() {
         </footer>
       </>}
     </section>}
-    <div className="companion-pet"><span className={`companion-pet__status companion-pet__status--${activePhase}`}>{activePhase === 'idle' ? wakeLabel : activePhase}</span><LivingKiwi phase={activePhase} level={wake.level} onClick={() => { expand(!expanded); setPaused(false) }} /></div>
+    <div className="companion-pet"><span className={`companion-pet__status companion-pet__status--${activePhase}`}>{phaseLabel}</span><LivingKiwi phase={activePhase} level={wake.level} onClick={() => { expand(!expanded); setPaused(false) }} /></div>
     {wake.caption && <div className="companion-live-caption" role="status" aria-live="polite"><span>{wake.listening ? 'LISTENING' : 'HEARD'}</span><p>{wake.caption}</p></div>}
   </main>
 }

@@ -31,7 +31,10 @@ nsis:
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
-  createDesktopShortcut: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  menuCategory: Kiwi
+  runAfterFinish: true
   shortcutName: Kiwi
 portable:
   artifactName: Kiwi-Portable-${version}.${ext}

@@ -1,6 +1,6 @@
 # Kiwi Windows demo
 
-1. Double-click Kiwi-Portable-0.1.1.exe. The lime mascot appears above the taskbar on the right, with “Hey Kiwi · mic on” once the listener is ready.
+1. Install Kiwi with the newest `Kiwi-Setup-*.exe` and leave **Launch Kiwi** enabled. The lime mascot appears above the taskbar on the right, with "Hey Kiwi · mic on" once the listener is ready.
 2. Move the pointer around the desktop. All eye layers track it; Kiwi breathes and blinks.
 3. Click Kiwi. The dark chat card expands; ask “What can you do?”.
 4. Ask “open GitHub and YouTube”, then “what time is it?”. These are deterministic desktop commands.
