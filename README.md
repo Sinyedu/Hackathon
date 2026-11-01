@@ -21,6 +21,100 @@ Try “open GitHub and YouTube”, “open a new tab in Firefox”, “search fo
 
 API keys are encrypted with Electron safeStorage in the main process, never returned to the renderer. Cloud mode is used only for the bounded website-drafting feature; it does not send screenshots, clipboard or microphone audio. Kiwi does not expose arbitrary shell execution, passwords, file deletion, or unrestricted computer control. New desktop capabilities should be added as explicit, validated actions in `frontend/electron/actions.cjs`.
 
+![Kiwi desktop companion showing the mascot, live command caption, and command panel](docs/kiwi-continue/docs/audit/evidence/command-mode-showcase.png)
+
+## Complete Windows installation guide
+
+### Option A: portable build (recommended for a first test)
+
+1. Open `frontend/release/Kiwi-Portable-0.1.1.exe`.
+2. If Windows SmartScreen appears, choose **More info → Run anyway**. This local hackathon build is unsigned; the warning is about publisher verification, not a Kiwi runtime failure.
+3. Keep the portable executable in a permanent folder. Do not launch it directly from a temporary archive folder.
+4. Kiwi appears above the Windows taskbar in the bottom-right. It does not create a normal taskbar button.
+5. Click the mascot once to open the command panel. Click the `X` in the panel to return to the small always-on-top mascot.
+
+The portable build is self-contained. It does not need Node.js, pnpm, Python, a browser dev server, or the repository after it has been built. It does need a working Windows microphone for hands-free commands and Firefox if you ask specifically for a Firefox tab.
+
+### Option B: installer
+
+1. Run `frontend/release/Kiwi-Setup-0.1.1.exe`.
+2. Choose an install location and finish the wizard.
+3. Start **Kiwi** from the Start menu.
+4. To remove it, use Windows **Installed apps**. The portable executable can simply be closed and deleted.
+
+Both files are unsigned release artifacts for local testing. The installer and portable build contain the same Electron application; the installer only adds the normal Windows install/uninstall wrapper.
+
+### First-run checklist
+
+1. Make sure the microphone is connected and selected in **Windows Settings → Privacy & security → Microphone**. Allow desktop apps to access it.
+2. Start Kiwi and wait for the status chip to say **Hey Kiwi · mic on**.
+3. Say **Hey Kiwi**, pause for the mascot to change its smile to the animated speaker, and then say a command. No button press is required.
+4. The live words appear below Kiwi. They are provisional until the local decoder verifies the finished phrase.
+5. Kiwi performs the command and leaves a text confirmation in the panel. Kiwi intentionally does not speak replies.
+6. If you do not want the microphone active, turn off **Listen for “Hey Kiwi”** in Settings or choose **Pause microphone** from the tray menu.
+
+The first voice run may need the English speech model. Open the panel, choose Settings, and press **Download speech model**. The download is stored outside the installer and is reused on later launches. The current packaged listener uses Windows offline speech for the wake phrase and a local Whisper decoder to verify the completed command; no microphone audio is sent to a cloud service by default.
+
+### Commands that work in the current build
+
+| Say this | What Kiwi does |
+| --- | --- |
+| `open GitHub` | Opens the known GitHub HTTPS site. |
+| `open GitHub and YouTube` | Opens both known sites. |
+| `open a new tab in Firefox` | Launches Firefox with a blank new tab. |
+| `open a new Firefox tab to GitHub` | Opens GitHub in a new Firefox tab. |
+| `open calculator`, `open notepad`, `open Firefox` | Launches the allow-listed Windows application. |
+| `search for pizza recipes` | Opens a Google search in the default browser. |
+| `play lo-fi` | Opens a YouTube Music search. |
+| `volume up`, `volume down`, `mute`, `pause music`, `next track` | Sends the corresponding Windows media key. |
+| `switch to dark mode` | Changes the Windows light/dark preference. |
+| `set a 5 minute timer` | Creates a local Windows notification timer. Kiwi must remain running. |
+| `what time is it` | Shows the local computer time. |
+| `build a coffee shop landing page` | Runs the bounded website draft flow, with approval before writing/opening files. |
+| `Kiwi stop` | Cancels the active command or model request. |
+
+Commands are parsed in the Electron main process. Direct commands do not require the cloud provider or a conversational model. Ollama is only needed for the optional website drafting flow and for any future model-backed tools you explicitly enable.
+
+### How PC access works
+
+Kiwi is a desktop app, so the privileged part lives in Electron’s main process rather than in a browser tab. The renderer can request only named IPC operations. The action router then validates the request and calls one of a small number of explicit actions: open a known application, open a validated HTTPS URL, launch a Firefox tab, send a media key, set the Windows theme, or create a timer.
+
+This is deliberate. Giving a language model unrestricted PowerShell, filesystem access, password typing, or arbitrary window-control rights would let a transcription error or malicious page delete data or leak secrets. Kiwi therefore does **not** claim to do literally anything on the computer. To add a new capability, implement a narrow action in `frontend/electron/actions.cjs`, add an intent test, validate all inputs, and return a real success or error result. Never execute raw speech as a shell command.
+
+### Troubleshooting
+
+**“Kiwi could not start.”** Close every old Kiwi window from the tray or Task Manager, then launch the newest executable from `frontend/release`. If it still fails, inspect `%APPDATA%\Kiwi\logs\startup.log`. Rebuilding from source also clears stale renderer files: run `pnpm.cmd build` inside `frontend`, then launch with `pnpm.cmd desktop`.
+
+**The mascot is visible but does not hear me.** Check microphone privacy permissions, confirm that the Windows speech language includes English, and make sure Kiwi is not paused in the tray. The small status chip should say **Hey Kiwi · mic on**. Use `Ctrl+Shift+.` to stop a stuck command, then re-enable the microphone.
+
+**The words are wrong.** Speak the wake phrase first, pause briefly for the speaker animation, and use short direct commands. Kiwi shows provisional words because Windows speech can revise them. A final command is rejected if its verified audio no longer contains the addressed wake phrase.
+
+**Firefox does not open.** Install Firefox in its normal `Program Files` location or add `firefox.exe` to PATH. Kiwi checks the standard 64-bit, 32-bit, and per-user locations and otherwise asks Windows to resolve `firefox.exe`.
+
+**Ollama or the model is unavailable.** Direct desktop commands still work. For the optional website builder, install Ollama, run `ollama pull qwen3:1.7b`, or add your own compatible provider key in Settings. Do not configure a model larger than the documented local budget without reviewing the machine-performance impact.
+
+**Windows shows an unknown-publisher warning.** This release is unsigned. Verify that the file came from this repository/build, then accept the local test warning or build a signed release with your own certificate.
+
+### Build the release yourself
+
+From PowerShell at the repository root:
+
+```powershell
+cd frontend
+pnpm.cmd install --frozen-lockfile
+pnpm.cmd test
+pnpm.cmd test:desktop
+pnpm.cmd lint
+pnpm.cmd build
+pnpm.cmd dist
+```
+
+`pnpm.cmd dist` builds the React renderer, compiles the Windows speech listener, bundles the local Whisper helper, and creates both `frontend/release/Kiwi-Setup-0.1.1.exe` and `frontend/release/Kiwi-Portable-0.1.1.exe`. Build output is ignored by Git. If an old Kiwi instance is running, quit it before rebuilding or Windows may keep the old packaged process alive.
+
+### Repository layout after the branch merge
+
+The working Windows release is the `frontend/` Electron app described above. The merged `kiwi/` directory is the separate development architecture brought over from `origin/development`; it is intentionally retained for continued work and is not yet the entry point for the tested `frontend/release` binaries. Do not mix its install commands with the release commands above.
+
 ## Build and verify from source
 
 ```powershell

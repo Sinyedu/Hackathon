@@ -1,0 +1,118 @@
+{
+  "events": [
+    {
+      "mark": "mascot-ready",
+      "durationMs": 185.95139999999998
+    }
+  ],
+  "bounds": {
+    "x": 3268,
+    "y": 1190,
+    "width": 160,
+    "height": 190
+  },
+  "alwaysOnTop": true,
+  "provider": {
+    "ok": true,
+    "message": "qwen3:1.7b is ready on this computer.",
+    "models": [
+      "qwen3:1.7b",
+      "qwen38-agent:latest",
+      "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-Q3_K_XL",
+      "llama3.2:3b"
+    ]
+  },
+  "renderer": {
+    "mascot": true,
+    "eyes": 3,
+    "desktop": true,
+    "bodyTransparent": "rgba(0, 0, 0, 0)"
+  },
+  "processes": [
+    {
+      "cpu": {
+        "cumulativeCPUUsage": 0.359375,
+        "percentCPUUsage": 0,
+        "idleWakeupsPerSecond": 0
+      },
+      "pid": 45160,
+      "type": "Browser",
+      "creationTime": 1793537421400.29,
+      "memory": {
+        "workingSetSize": 104160,
+        "peakWorkingSetSize": 104352,
+        "privateBytes": 78220
+      },
+      "integrityLevel": "medium",
+      "sandboxed": false
+    },
+    {
+      "cpu": {
+        "cumulativeCPUUsage": 0.65625,
+        "percentCPUUsage": 0,
+        "idleWakeupsPerSecond": 0
+      },
+      "pid": 30832,
+      "type": "GPU",
+      "creationTime": 1793537421503.291,
+      "serviceName": "GPU",
+      "memory": {
+        "workingSetSize": 97568,
+        "peakWorkingSetSize": 100316,
+        "privateBytes": 84176
+      },
+      "integrityLevel": "low",
+      "sandboxed": true
+    },
+    {
+      "cpu": {
+        "cumulativeCPUUsage": 0.046875,
+        "percentCPUUsage": 0,
+        "idleWakeupsPerSecond": 0
+      },
+      "pid": 39712,
+      "type": "Utility",
+      "creationTime": 1793537421507.529,
+      "serviceName": "network.mojom.NetworkService",
+      "name": "Network Service",
+      "memory": {
+        "workingSetSize": 47416,
+        "peakWorkingSetSize": 47492,
+        "privateBytes": 13464
+      },
+      "integrityLevel": "medium",
+      "sandboxed": false
+    },
+    {
+      "cpu": {
+        "cumulativeCPUUsage": 0.296875,
+        "percentCPUUsage": 0,
+        "idleWakeupsPerSecond": 0
+      },
+      "pid": 41140,
+      "type": "Tab",
+      "creationTime": 1793537421541.819,
+      "memory": {
+        "workingSetSize": 88720,
+        "peakWorkingSetSize": 88720,
+        "privateBytes": 36300
+      },
+      "integrityLevel": "untrusted",
+      "sandboxed": true
+    }
+  ],
+  "command": {
+    "answer": "Opened a new Firefox tab in a new Firefox tab.",
+    "elapsedMs": 7.200000047683716
+  },
+  "audio": {
+    "voices": 0,
+    "secureContext": true,
+    "capture": true,
+    "sampleRate": 48000
+  },
+  "eyeMovement": {
+    "x": "-10.647349117772698px",
+    "y": "-8.583383333360862px"
+  }
+}

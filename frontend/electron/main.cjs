@@ -48,7 +48,7 @@ async function respond(text, id) {
   const intent = intentOf(text)
   const timeout = setTimeout(() => controller.abort(), intent.type === 'build' ? 180000 : 60000)
   try {
-    if (intent.type !== 'chat') {
+    if (intent.type !== 'unsupported') {
       if (intent.type === 'stop') { stop(); return }
       try {
         const answer = intent.type === 'build' ? await require('./coding.cjs').build(intent.description, controller.signal) : await actions.execute(intent)
@@ -130,11 +130,11 @@ async function createWindow() {
     const report = { events, bounds: window.getBounds(), alwaysOnTop: window.isAlwaysOnTop(), provider: await provider.health(), renderer: await window.webContents.executeJavaScript('({ mascot: !!document.querySelector("#kiwi"), eyes: document.querySelectorAll(".kiwi-eyes").length, desktop: !!window.kiwiDesktop, bodyTransparent: getComputedStyle(document.body).backgroundColor })'), processes: app.getAppMetrics() }
     bounds(true); publish('expand', { expanded: true })
     await new Promise((resolve) => setTimeout(resolve, 300))
-    report.chat = await window.webContents.executeJavaScript(`new Promise(async (resolve) => {
-      const id = 'smoke-local-chat'; let answer = ''; const started = performance.now();
+    report.command = await window.webContents.executeJavaScript(`new Promise(async (resolve) => {
+      const id = 'smoke-command'; let answer = ''; const started = performance.now();
       const timeout = setTimeout(() => { off(); resolve({ error: 'timeout' }) }, 45000);
       const off = window.kiwiDesktop.onEvent(e => { if (e.id !== id) return; if (e.type === 'delta') answer += e.text; if (e.type === 'done' || e.type === 'error') { clearTimeout(timeout); off(); resolve({ answer, error: e.message, elapsedMs: performance.now() - started }); } });
-      try { await window.kiwiDesktop.send({ id, text: 'Introduce yourself in one sentence.', history: [] }); } catch(e) { clearTimeout(timeout); off(); resolve({ error: e.message }); }
+      try { await window.kiwiDesktop.send({ id, text: 'open a new tab in Firefox', history: [] }); } catch(e) { clearTimeout(timeout); off(); resolve({ error: e.message }); }
     })`)
     report.audio = await window.webContents.executeJavaScript(`(async () => {
       const result = { voices: speechSynthesis.getVoices().length, secureContext: isSecureContext };

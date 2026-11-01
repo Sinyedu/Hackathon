@@ -17,7 +17,7 @@ async function execute(intent) {
     case 'firefox-tab': {
       if (process.platform !== 'win32') throw new Error('Firefox tab control is available on Windows in this build.')
       await launchFirefox(intent.url)
-      return `Opened ${intent.label} in a new Firefox tab.`
+      return intent.url === 'about:blank' ? 'Opened a new Firefox tab.' : `Opened ${intent.label} in a new Firefox tab.`
     }
     case 'timer': {
       if (!Number.isInteger(intent.seconds) || intent.seconds < 1 || intent.seconds > 86400) throw new Error('Choose a timer between one second and 24 hours.')
